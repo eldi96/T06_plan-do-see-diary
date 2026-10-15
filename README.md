@@ -2,7 +2,7 @@
 
 강의실과 집에서 Codex Cloud로 이어서 작업하기 위한 프로젝트입니다.
 
-app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScript + Workers API + D1을 사용합니다. 2026-10-15 최종 소스 업로드와 배포를 재개했으며, 사이트는 사용자 요청으로 나만 접근하도록 유지합니다.
+app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScript + Workers API + D1을 사용합니다. 2026-10-15 최종 소스를 GitHub에 업로드하고 사용자 승인으로 사이트를 공개 배포했습니다.
 
 최신 방향은 USER_PRODUCT_BRIEF.md, 웹/앱 확장 및 일정 정책은 APP_READY_DESIGN.md를 읽습니다. ASSIGNMENT_REQUIREMENTS.md의 과제 기준을 유지합니다.
 
@@ -17,9 +17,10 @@ app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScri
 
 ## 시작 요청
 
-> AGENTS.md와 PROJECT_STATUS.md를 읽고 플랜두씨 다이어리 작업을 이어가줘. 구현 상태를 확인하고, 사용자의 추가 배포 금지 요청을 지켜줘.
+> AGENTS.md와 PROJECT_STATUS.md를 읽고 플랜두씨 다이어리 작업을 이어가줘. 최신 배포 상태와 사용자 요청을 확인하고 작업을 이어가줘.
 
 ## 실행
 
 로컬 확인 주소는 http://127.0.0.1:8787 입니다. 설치·빌드·로컬 테스트를 완료했습니다. 실행 방법은 app/README.md, 최종 데이터 계약은 app/contracts/pds-schema-v2.json에 있습니다. 앱 패키징 및 과제 제출 완료를 의미하지 않습니다.
+
 

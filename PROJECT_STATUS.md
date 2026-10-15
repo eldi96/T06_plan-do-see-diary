@@ -307,3 +307,12 @@
 ## 공개 배포 승인 갱신 (2026-10-15)
 - 사용자가 채점자의 접근을 확인한 후 공개 전환을 명시적으로 승인했다. 이전 '나만 접근' 선택보다 이 결정을 우선한다.
 - 사이트 공개 배포와 GitHub 최종 소스 업로드를 진행한다. DB 파일·실제 기록·내보내기·캡처·환경 비밀값은 소스 업로드에서 제외한다.
+
+## 공개 배포 완료 (2026-10-15)
+- GitHub 최종 소스: https://github.com/eldi96/plan-do-see-diary (구현 커밋 71de851c9acc239db51619d2b46701900fe47e7f). 기존 저장소 공개 범위는 변경하지 않았다.
+- 결과물: https://pds-study-planner.bronzeamber32.chatgpt.site
+- 기존 Sites 프로젝트를 재사용해 버전2 배포 성공. 배포ID appgdep_6ad03f3deec481919a61b5dc8448ec44, 소스 커밋42dc627631cab24dffe5b3d1d2ef53f8eb5533f4.
+- 사용자 승인에 따라 접근 모드를 public으로 변경했다. 로그인 없는 HTTP 화면200 및 API records/history/completions 조회 성공.
+- 배포 DB의 활성 자료는 비어 있다. 로컬 실제 기록 이전은 사용자 응답 대기이며, 로컬 DB와 테스트 DB는 업로드하거나 변경하지 않았다.
+- Windows 패키징은 Git Bash 경로와 TAR_OPTIONS=--force-local로 경로 해석 문제를 해결했다.
+- 남은 제출 조건: 실제 기록 이전 또는 사용자 직접 입력, 소스 공개 접근 확인, 최종 제출 문구·증거. 공개 배포 성공과 과제 최종 제출 완료를 구분한다.
