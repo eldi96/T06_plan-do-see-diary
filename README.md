@@ -1,5 +1,8 @@
 # 플랜두씨 다이어리
 
+[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [공개 소스](https://github.com/eldi96/plan-do-see-diary)
+
+
 강의실과 집에서 Codex Cloud로 이어서 작업하기 위한 프로젝트입니다.
 
 app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScript + Workers API + D1을 사용합니다. 2026-10-15 최종 소스를 GitHub에 업로드하고 사용자 승인으로 사이트를 공개 배포했습니다.
@@ -22,5 +25,6 @@ app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScri
 ## 실행
 
 로컬 확인 주소는 http://127.0.0.1:8787 입니다. 설치·빌드·로컬 테스트를 완료했습니다. 실행 방법은 app/README.md, 최종 데이터 계약은 app/contracts/pds-schema-v2.json에 있습니다. 앱 패키징 및 과제 제출 완료를 의미하지 않습니다.
+
 
 
