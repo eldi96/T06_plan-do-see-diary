@@ -1,30 +1,19 @@
 # 플랜두씨 다이어리
 
-[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [공개 소스](https://github.com/eldi96/plan-do-see-diary)
+계획을 세우고, 실제로 한 일을 기록하고, 돌아본 내용을 다음 계획으로 이어가는 앱입니다.
 
-
-강의실과 집에서 Codex Cloud로 이어서 작업하기 위한 프로젝트입니다.
-
-app/에 차콜·민트 체크리스트 웹을 구현했습니다. React/TypeScript + Workers API + D1을 사용합니다. 2026-10-15 최종 소스를 GitHub에 업로드하고 사용자 승인으로 사이트를 공개 배포했습니다.
-
-최신 방향은 USER_PRODUCT_BRIEF.md, 웹/앱 확장 및 일정 정책은 APP_READY_DESIGN.md를 읽습니다. ASSIGNMENT_REQUIREMENTS.md의 과제 기준을 유지합니다.
-
-## 다른 컴퓨터에서 이어가기
-
-1. 동일한 ChatGPT 계정과 워크스페이스에 로그인합니다.
-2. Cloud 작업 환경에서 이 저장소를 선택합니다.
-3. 진행 중인 클라우드 채팅을 열어 이어갑니다.
-4. 새로운 작업에서는 AGENTS.md와 PROJECT_STATUS.md를 먼저 읽도록 요청합니다.
-
-작업 환경 설정을 공유하더라도 각 클라우드 작업의 작업 공간은 별개입니다. 다른 작업에서 사용할 변경은 커밋하고 저장소에 반영합니다.
-
-## 시작 요청
-
-> AGENTS.md와 PROJECT_STATUS.md를 읽고 플랜두씨 다이어리 작업을 이어가줘. 최신 배포 상태와 사용자 요청을 확인하고 작업을 이어가줘.
+React · TypeScript · Cloudflare Workers · D1을 사용합니다. 최종 데이터 구조는 app/contracts/pds-schema-v2.json에 있습니다.
 
 ## 실행
 
-로컬 확인 주소는 http://127.0.0.1:8787 입니다. 설치·빌드·로컬 테스트를 완료했습니다. 실행 방법은 app/README.md, 최종 데이터 계약은 app/contracts/pds-schema-v2.json에 있습니다. 앱 패키징 및 과제 제출 완료를 의미하지 않습니다.
+Node.js 22.13 이상에서 app 폴더로 이동해 실행합니다.
 
+```sh
+npm ci
+npm run build
+npm start -- --port 8787
+```
 
+로컬 주소: http://127.0.0.1:8787
 
+실제 다이어리 데이터, DB 파일, 환경 비밀값은 저장소에 포함하지 않습니다.
