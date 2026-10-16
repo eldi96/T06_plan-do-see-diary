@@ -144,8 +144,8 @@ export function AuthGate({children}: {children: ReactNode}) {
         <label className="auth-field"><span>아이디</span><input name="username" autoComplete="username" autoCapitalize="none" spellCheck={false}
           required minLength={3} maxLength={30} pattern="[A-Za-z0-9_.]+" aria-describedby={signup ? 'auth-id-hint' : undefined}/></label>
         {signup && <p className="auth-hint" id="auth-id-hint">영문·숫자·밑줄·마침표로 3~30자 · 영문은 소문자로 저장됩니다.</p>}
-        <PasswordField label="비밀번호" name="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 12 : 1}/>
-        {signup && <><p className="auth-hint">비밀번호는 12자 이상으로 설정해 주세요.</p><PasswordField label="비밀번호 확인" name="confirmPassword" autoComplete="new-password" minLength={12}/></>}
+        <PasswordField label="비밀번호" name="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 4 : 1}/>
+        {signup && <><p className="auth-hint">비밀번호는 4자 이상으로 설정해 주세요.</p><PasswordField label="비밀번호 확인" name="confirmPassword" autoComplete="new-password" minLength={4}/></>}
         <details><summary className="auth-hint">기존 기록 연결 · 해당하는 경우만</summary><PasswordField label="기존 기록 연결 확인코드" name="ownerSetupKey" autoComplete="off" required={false}/></details>
         {error && <p className="auth-error" role="alert">{error}</p>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
@@ -173,8 +173,8 @@ export function AuthGate({children}: {children: ReactNode}) {
         void accountAction('change-password', {currentPassword: data.get('currentPassword'), newPassword: data.get('newPassword')});
       }}><fieldset disabled={busy}><h3>비밀번호 변경</h3>
         <PasswordField label="현재 비밀번호" name="currentPassword" autoComplete="current-password"/>
-        <PasswordField label="새 비밀번호 · 12자 이상" name="newPassword" autoComplete="new-password" minLength={12}/>
-        <PasswordField label="새 비밀번호 확인" name="confirmPassword" autoComplete="new-password" minLength={12}/>
+        <PasswordField label="새 비밀번호 · 4자 이상" name="newPassword" autoComplete="new-password" minLength={4}/>
+        <PasswordField label="새 비밀번호 확인" name="confirmPassword" autoComplete="new-password" minLength={4}/>
         <button className="auth-secondary" type="submit">비밀번호 변경</button>
       </fieldset></form>
       <div className="auth-divider"/>
@@ -191,3 +191,4 @@ export function AuthGate({children}: {children: ReactNode}) {
     </dialog>}
   </>;
 }
+
