@@ -30,7 +30,7 @@ import { diaryRequest } from "../lib/diary-client";
 import { PlanBrowser } from "../components/plan-browser";
 import { ExecutionCalendar } from "../components/execution-calendar";
 import { CompleteTaskDialog } from "../components/complete-task-dialog";
-import { AuthGate } from "../components/auth-gate";
+import { AuthGate, AccountMenuTrigger } from "../components/auth-gate";
 import { ExperimentPanel } from "../components/experiment-panel";
 import { ReviewChart } from "../components/monthly-chart";
 import {
@@ -684,6 +684,7 @@ function DiaryHome() {
             데이터 내보내기
           </button>
           <small>계획 → 실행 → 돌아보기</small>
+          <AccountMenuTrigger />
         </div>
       </aside>
       <main>

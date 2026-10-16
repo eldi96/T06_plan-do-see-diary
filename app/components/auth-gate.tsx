@@ -1,10 +1,15 @@
 "use client";
 
-import {useCallback, useEffect, useRef, useState} from 'react';
+import {createContext, useContext, useCallback, useEffect, useRef, useState} from 'react';
 import type {FormEvent, ReactNode} from 'react';
 
 type User = {id: string; username: string};
 type Session = {user?: User; legacyClaimPending?: boolean};
+const AccountTriggerContext = createContext<ReactNode>(null);
+
+export function AccountMenuTrigger() {
+  return <div className="auth-account-slot">{useContext(AccountTriggerContext)}</div>;
+}
 
 async function authRequest(path: string, body?: object): Promise<Session> {
   const response = await fetch(`/api/auth/${path}`, {
@@ -168,11 +173,13 @@ export function AuthGate({children}: {children: ReactNode}) {
     {signup && <p className="auth-footnote">현재 아이디·비밀번호 찾기는 지원하지 않습니다. 가입 정보를 안전하게 보관해 주세요.</p>}
   </section></main>;
 
-  return <>
-    <div className="auth-account-strip"><button ref={accountButton} type="button" className="auth-account-button"
-      aria-haspopup="dialog" onClick={event => {setKeyboard(event.detail === 0); setError(''); setAccountOpen(true);}}>
-      <span className="auth-avatar" aria-hidden="true">{user.username.slice(0, 1).toUpperCase()}</span><span>{user.username}</span><span aria-hidden="true">⌄</span>
-    </button></div>
+  return <AccountTriggerContext.Provider value={<button ref={accountButton} type="button" className="auth-account-button"
+      aria-label={`${user.username} 계정 설정`} aria-haspopup="dialog" aria-expanded={accountOpen}
+      onClick={event => {setKeyboard(event.detail === 0); setError(''); setAccountOpen(true);}}>
+      <span className="auth-avatar" aria-hidden="true">{user.username.slice(0, 1).toUpperCase()}</span>
+      <span className="auth-account-copy"><span>{user.username}</span><small>계정 설정</small></span>
+      <svg className="auth-account-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m9 6 6 6-6 6"/></svg>
+    </button>}>
     {legacyPending && <p className="auth-legacy-notice" role="status">기존 기록의 계정 연결을 준비 중입니다. 연결 전에는 기존 기록이 표시되지 않습니다.</p>}
     <div key={user.id}>{children}</div>
     {accountOpen && <dialog ref={dialog} className="auth-dialog" data-keyboard={keyboard} aria-labelledby="auth-account-title"
@@ -202,6 +209,6 @@ export function AuthGate({children}: {children: ReactNode}) {
       </details>
       {error && <p className="auth-error" role="alert">{error}</p>}
     </dialog>}
-  </>;
+  </AccountTriggerContext.Provider>;
 }
 
