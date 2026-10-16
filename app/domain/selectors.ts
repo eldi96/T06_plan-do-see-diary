@@ -13,7 +13,7 @@ import { isDelayed, requireDate, seoulToday } from "./dates";
 /** Live views only. Export retains the original records, including tombstones. */
 export function buildIndexes(records: readonly DiaryRecord[]) {
   const live = records.filter((record) => !record.deleted);
-  const plans = live.filter((r): r is Plan => r.kind === "plan");
+  const plans = live.filter((r): r is Plan => r.kind === "plan").sort(comparePlans);
   const planIds = new Set(plans.map((p) => p.id));
   const tasks = live.filter(
     (r): r is Task => r.kind === "task" && planIds.has(r.planId),
@@ -102,6 +102,12 @@ export function periodTasks(
 }
 
 const priorityOrder = { 높음: 0, 보통: 1, 낮음: 2 } as const;
+/** Plans always use start date first, priority second; IDs stabilize ties across reloads. */
+export function comparePlans(a: Plan, b: Plan) {
+  return a.startDate.localeCompare(b.startDate) ||
+    priorityOrder[a.priority] - priorityOrder[b.priority] ||
+    a.id.localeCompare(b.id);
+}
 /** C20: stable ID tiebreaker, matching the current screen's published sorting. */
 export function compareTasks(a: Task, b: Task, sort: "due" | "title" = "due") {
   if (sort === "title")

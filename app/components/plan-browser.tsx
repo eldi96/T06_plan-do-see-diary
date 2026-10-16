@@ -38,7 +38,7 @@ export function PlanBrowser({ plans, tasks, selectedId, busy, onSelect, onEdit, 
   if (!plans.length) return null;
   return <section className="plan-browser" aria-label="내 계획 탐색">
     <div className="plan-browser-toolbar">
-      <div><h2>내 계획 <span>{plans.length}</span></h2><p>계획을 고르면 아래 할 일과 루틴이 이어집니다.</p></div>
+      <div><h2>내 계획 <span>{plans.length}</span></h2><p>시작일 빠른 순 · 같은 날은 우선순위 높은 순</p></div>
       <div className="plan-browser-controls">
         <label className="plan-search"><Search size={16}/><input aria-label="계획 검색" placeholder="계획 찾기" value={query} onChange={event => { setQuery(event.target.value); setPage(1); }}/></label>
         <div className="plan-view-toggle" role="group" aria-label="계획 보기 방식">
