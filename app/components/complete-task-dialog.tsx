@@ -17,6 +17,7 @@ export function CompleteTaskDialog({task,onClose,onSaved}:{task:Task;onClose:()=
  const close=()=>{if(!lock.current)onClose();};
  const save=async(e:React.FormEvent)=>{e.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');
   try{
+   if(task.dueDate>seoulToday())throw Error('미래 날짜의 할 일은 아직 완료할 수 없습니다.');
    const duration=Number(minutes);
    if(!Number.isFinite(duration)||duration<=0||duration>1440)throw Error('실제 시간을 1~1440분 사이로 입력하세요.');
    const finish=new Date(`${end}:00+09:00`);

@@ -12,3 +12,12 @@
 html[data-input-method=keyboard] .calendar-layout,html[data-input-method=keyboard] .calendar-panel-slot{transition:none}
 @media(prefers-reduced-motion:reduce){.calendar-layout,.calendar-panel-slot{transition:none;transform:none}}
 .calendar-panel-slot{min-height:0;max-height:0}.calendar-layout.has-selection .calendar-panel-slot{max-height:none}.calendar-main{align-self:start}
+
+/* 주말/공휴일은 숫자와 이름으로만 구분해 완료농도 민트와 충돌하지 않는다. */
+.calendar-weekdays .is-sunday,.calendar-day.is-sunday>span,.calendar-day.is-holiday>span{color:#e2a39a}
+.calendar-weekdays .is-saturday,.calendar-day.is-saturday:not(.is-holiday)>span{color:#9db9dd}
+.calendar-holiday-name{display:block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-style:normal;font-size:10px;color:#d8a49b;margin:3px 0 0;text-align:left}
+.calendar-day.level-full.is-sunday>span,.calendar-day.level-full.is-holiday>span,.calendar-day.level-high.is-holiday>span{color:#693a37}
+.calendar-day.level-full.is-saturday:not(.is-holiday)>span{color:#284b6b}
+.calendar-day.is-today>span{font-weight:700}
+@media(max-width:760px){.calendar-holiday-name{font-size:8px}}

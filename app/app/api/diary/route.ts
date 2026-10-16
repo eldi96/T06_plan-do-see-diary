@@ -1,7 +1,7 @@
 import { env } from "cloudflare:workers";
 import { z } from "zod";
 import { requireSession, assertSameOrigin } from "../../../lib/auth-server";
-import { isCalendarDate, examStartDate } from "../../../domain/dates";
+import { isCalendarDate, examStartDate, seoulToday } from "../../../domain/dates";
 import { executionDurationSeconds } from "../../../domain/validation";
 import {
   executionActivities,
@@ -57,7 +57,7 @@ const schemas = {
     ),
   exam: z
     .object({
-      title: z.enum(["SQLD", "ADsP"]),
+      title: z.string().trim().min(1).max(100),
       examDate: date,
       mode: z.enum(["7", "14", "custom"]),
       customDate: date.optional(),
@@ -214,6 +214,8 @@ export async function POST(request: Request) {
     if (action !== "save" && !row) throw new Error("대상이 없습니다.");
     if ((action === "toggle" || action === "complete") && kind !== "task")
       throw new Error("할 일만 완료할 수 있습니다.");
+    if ((action === "complete" || (action === "toggle" && !old?.completed)) && old?.dueDate > seoulToday())
+      return Response.json({error:"미래 날짜의 할 일은 아직 완료할 수 없습니다."},{status:400,headers});
     let value: any =
       action === "save"
         ? schemas[kind].parse(body.data)
@@ -244,6 +246,8 @@ export async function POST(request: Request) {
       value.cycle=(value.cycle??0)+1;
     }
     if (kind === "execution") {
+      if (action === "save" && Date.parse(value.end) > Date.now() + 60000)
+        return Response.json({error:"미래 시각의 실행 기록은 저장할 수 없습니다."},{status:400,headers});
       try {
         value.durationSeconds = executionDurationSeconds(
           value.start,
@@ -284,6 +288,8 @@ export async function POST(request: Request) {
         .first<Row>();
       if (!task) throw new Error("연결할 할 일이 없습니다.");
       const taskValue = unpack(task);
+      if (!row && taskValue.dueDate > seoulToday())
+        return Response.json({error:"미래 날짜의 할 일은 아직 기록할 수 없습니다."},{status:400,headers});
       const parent = await db()
         .prepare(
           "SELECT id FROM records WHERE id=? AND owner_id=? AND kind='plan' AND deleted=0",

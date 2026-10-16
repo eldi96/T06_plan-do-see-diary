@@ -57,7 +57,7 @@ export interface Execution extends ExecutionInput, RecordMetadata {
 }
 export type ExamStartMode = "7" | "14" | "custom";
 export interface ExamInput {
-  title: "SQLD" | "ADsP";
+  title: string;
   examDate: CalendarDate;
   mode: ExamStartMode;
   customDate?: CalendarDate;

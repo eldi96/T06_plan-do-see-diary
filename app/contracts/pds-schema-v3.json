@@ -97,7 +97,7 @@
       "blockedReason"
     ],
     "exam": [
-      "title:SQLD|ADsP",
+      "title:string(1..100)",
       "examDate",
       "mode:7|14|custom",
       "customDate?",

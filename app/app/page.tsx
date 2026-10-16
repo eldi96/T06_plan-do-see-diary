@@ -57,6 +57,16 @@ const nav = [
   ["review", "돌아보기", BarChart3],
   ["exams", "시험 일정", GraduationCap],
 ] as const;
+const planTemplates = [
+  {title:"자격증 준비",success:"정한 범위의 문제를 풀고 오답 정리하기"},
+  {title:"운동",success:"정한 운동을 안전하게 마치기"},
+  {title:"스트레칭",success:"목·어깨·허리를 무리 없이 풀어주기"},
+  {title:"독서",success:"정한 분량을 읽고 인상 깊은 내용 남기기"},
+  {title:"외국어 공부",success:"배운 표현을 직접 말하거나 써 보기"},
+  {title:"업무",success:"정한 작업을 마치고 결과 확인하기"},
+  {title:"개인 프로젝트",success:"작은 기능 하나를 완성하고 동작 확인하기"},
+  {title:"생활 정리",success:"정한 공간이나 생활 할 일을 정리하기"},
+];
 function successExamples(title: string): string[] {
   if (/블로그/.test(title))
     return ["학습 내용을 정리한 글 1편 발행", "글에 실습 결과와 배운 점 포함"];
@@ -286,7 +296,7 @@ function DiaryHome() {
               }
             : kind === "execution"
               ? {
-                  taskId: planTasks[0]?.id ?? "",
+                  taskId: planTasks.find(t=>t.dueDate<=seoulToday())?.id ?? "",
                   start: "",
                   end: "",
                   content: "",
@@ -304,7 +314,7 @@ function DiaryHome() {
                     improvement: "",
                   }
                 : kind === "exam"
-                  ? { title: "SQLD", examDate: "", mode: "14", customDate: "" }
+                  ? { title: "", examDate: "", mode: "14", customDate: "" }
                   : {};
     d = { ...d, ...seed, ...item };
     if (["task", "routine"].includes(kind)) d.tagsText = (d.tags ?? []).join(", ");
@@ -530,8 +540,9 @@ function DiaryHome() {
     <article className="task-row" key={t.id}>
       <button
         className={"check " + (t.completed ? "checked" : "")}
-        disabled={busy}
+        disabled={busy || (!t.completed && t.dueDate > currentDay)}
         aria-label={`${t.title} ${t.completed ? "완료 취소" : "완료"}`}
+        title={!t.completed && t.dueDate > currentDay ? "미래 날짜의 할 일은 아직 완료할 수 없습니다." : undefined}
         onClick={() => t.completed?void change(t,"toggle"):setCompletingTask(t)}
       >
         {t.completed && <Check size={18} />}
@@ -556,6 +567,7 @@ function DiaryHome() {
         {blocked(t) && <span className="pill">막힘</span>}
         <button
           className="text-button"
+          disabled={t.dueDate > currentDay}
           onClick={() => open("execution", undefined, { taskId: t.id })}
         >
           기록 <ArrowUpRight size={14} />
@@ -654,15 +666,16 @@ function DiaryHome() {
           <div className="week-strip" aria-label="날짜 바로가기">
             {Array.from({ length: 7 }, (_, i) => {
               const weekday = new Date(today + "T00:00:00Z").getUTCDay(),
-                d = addDays(today, -((weekday + 6) % 7) + i);
+                d = addDays(today, -weekday + i);
               return (
                 <button
                   key={d}
+                  className={i === 0 ? "week-sunday" : i === 6 ? "week-saturday" : undefined}
                   aria-label={`${d} 할 일 보기`}
                   aria-pressed={d === today}
                   onClick={() => setDay(d)}
                 >
-                  <small>{weekdays[(i + 1) % 7]}</small>
+                  <small>{weekdays[i]}</small>
                   <span>{Number(d.slice(-2))}</span>
                 </button>
               );
@@ -1070,6 +1083,10 @@ function DiaryHome() {
           )}
           {tab === "plans" && (
             <>
+              <section className="panel plan-starters">
+                <div className="section-head"><h2>빠르게 시작하기</h2><span className="muted">필요한 분야를 골라 나만의 계획으로 바꿔보세요.</span></div>
+                <div className="suggestions">{planTemplates.map(template=><button key={template.title} onClick={()=>open("plan",undefined,template)}><Plus size={14}/>{template.title}</button>)}</div>
+              </section>
               <PlanBrowser plans={plans} tasks={tasks} selectedId={planId} busy={busy}
                 onAdd={()=>open("plan")}
                 onSelect={selectPlan} onEdit={p => open("plan", p)} onHistory={p => open("history", p)}
@@ -1134,7 +1151,7 @@ function DiaryHome() {
             </>
           )}
           {tab === "records" && (
-            <><ExecutionCalendar tasks={tasks} plans={plans} records={executions} busy={busy} initialDate={today} onToggle={async task=>{if(!task.completed){setCompletingTask(task);return false;}if(lock.current) throw Error("처리 중입니다.");lock.current=true;setBusy(true);try{await mutate({requestId:crypto.randomUUID(),action:"toggle",kind:"task",id:task.id,version:task.version});await reload();return true;}finally{lock.current=false;setBusy(false);}}} onEdit={task=>open("task",task)} onRecord={(task,date)=>open("execution",undefined,{taskId:task.id,start:`${date}T00:00`,end:`${date}T00:00`})} onSchedule={async(task,date)=>{
+            <><ExecutionCalendar tasks={tasks} plans={plans} records={executions} busy={busy} initialDate={today} onToggle={async task=>{if(!task.completed){if(task.dueDate>seoulToday())throw Error("미래 날짜의 할 일은 아직 완료할 수 없습니다.");setCompletingTask(task);return false;}if(lock.current) throw Error("처리 중입니다.");lock.current=true;setBusy(true);try{await mutate({requestId:crypto.randomUUID(),action:"toggle",kind:"task",id:task.id,version:task.version});await reload();return true;}finally{lock.current=false;setBusy(false);}}} onEdit={task=>open("task",task)} onRecord={(task,date)=>open("execution",undefined,{taskId:task.id,start:`${date}T00:00`,end:`${date}T00:00`})} onSchedule={async(task,date)=>{
               if(lock.current) throw Error("처리 중입니다. 잠시 후 다시 시도하세요.");
               lock.current=true;setBusy(true);
               try{const {id,version,kind,deleted,updatedAt,completed,cycle,...data}=task;await mutate({requestId:crypto.randomUUID(),action:"save",kind:"task",id,version,data:{...data,dueDate:date}});await reload();}finally{lock.current=false;setBusy(false);}
@@ -1384,7 +1401,7 @@ function DiaryHome() {
                       </div>
                       <h2>{name}</h2>
                       <p>
-                        {name === "SQLD" ? "SQL 개발자" : "데이터분석 준전문가"}
+                        {name === "SQLD" ? "SQL 개발자" : name === "ADsP" ? "데이터분석 준전문가" : "나의 시험 준비"}
                       </p>
                       <dl>
                         <div>
@@ -1687,7 +1704,7 @@ function DiaryHome() {
                   >
                     <option value="">할 일 선택</option>
                     {tasks.map((t) => (
-                      <option key={t.id} value={t.id}>
+                      <option key={t.id} value={t.id} disabled={!modal.item && t.dueDate > currentDay}>
                         {t.title} · {t.dueDate}
                       </option>
                     ))}
@@ -1795,15 +1812,9 @@ function DiaryHome() {
             )}
             {modal?.kind === "exam" && (
               <>
-                <Field label="자격증">
-                  <select
-                    disabled={!!modal.item}
-                    value={draft.title}
-                    onChange={(e) => edit("title", e.target.value)}
-                  >
-                    <option>SQLD</option>
-                    <option>ADsP</option>
-                  </select>
+                <Field label="시험명">
+                  <input required maxLength={100} disabled={!!modal.item} list="exam-name-suggestions" placeholder="준비할 시험 이름" value={draft.title} onChange={e=>edit("title",e.target.value)}/>
+                  <datalist id="exam-name-suggestions">{["SQLD","ADsP","정보처리기사","컴퓨터활용능력","TOEIC"].map(name=><option key={name} value={name}/>)}</datalist>
                 </Field>
                 <Field label="시험일">{input("examDate", "date")}</Field>
                 <Field label="언제부터 공부할까요?">

@@ -1294,3 +1294,6 @@ html[data-input-method="keyboard"] button {
 @media(hover:hover) and (pointer:fine){.estimated-time-options label:hover input:not(:checked)+span{background:#ffffff08;color:var(--text)}.estimated-time-options label:active span{transform:scale(.98)}}
 html[data-input-method=keyboard] .estimated-time-options span{transition:none;transform:none}
 @media(prefers-reduced-motion:reduce){.estimated-time-options span{transition:none!important;transform:none!important}}
+.week-strip .week-sunday small,.week-strip .week-sunday span{color:#e2a39a}
+.week-strip .week-saturday small,.week-strip .week-saturday span{color:#9db9dd}
+.week-strip [aria-pressed=true] span{color:#12362a}
