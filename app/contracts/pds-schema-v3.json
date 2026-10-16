@@ -1,0 +1,164 @@
+{
+  "schemaVersion": 3,
+  "storage": "Cloudflare D1 (SQLite)",
+  "timezone": "Asia/Seoul",
+  "tables": {
+    "records": {
+      "columns": {
+        "id": "text primary key UUID",
+        "kind": "plan|task|execution|exam|routine|review",
+        "data": "JSON text with fields below",
+        "version": "integer >=1",
+        "deleted": "integer 0|1 soft deletion",
+        "occurrence": "nullable text; unique(owner_id, occurrence)",
+        "updated_at": "UTC ISO instant",
+        "owner_id": "nullable during legacy migration; logical auth_user.id FK ON DELETE CASCADE; server authenticated owner only"
+      }
+    },
+    "history": {
+      "columns": {
+        "id": "UUID primary key",
+        "record_id": "logical records.id",
+        "kind": "record kind",
+        "data": "previous exact JSON snapshot",
+        "version": "previous version",
+        "created_at": "UTC ISO instant",
+        "owner_id": "nullable during legacy migration; logical auth_user.id FK ON DELETE CASCADE; server authenticated owner only"
+      }
+    },
+    "completions": {
+      "columns": {
+        "id": "UUID primary key",
+        "task_id": "logical task records.id",
+        "cycle": "integer completion cycle",
+        "request_id": "logical requests.id",
+        "created_at": "UTC ISO instant",
+        "owner_id": "nullable during legacy migration; logical auth_user.id FK ON DELETE CASCADE; server authenticated owner only"
+      },
+      "unique": [
+        [
+          "task_id",
+          "cycle"
+        ]
+      ]
+    },
+    "requests": {
+      "columns": {
+        "id": "request UUID primary key",
+        "fingerprint": "request JSON for payload equality",
+        "result": "JSON id/version/ok",
+        "created_at": "UTC ISO instant",
+        "owner_id": "nullable during legacy migration; logical auth_user.id FK ON DELETE CASCADE; server authenticated owner only"
+      }
+    },
+    "mutation_guards": {
+      "columns": {
+        "id": "temporary request UUID primary key",
+        "valid": "integer CHECK valid=1"
+      },
+      "purpose": "abort complete atomic batch on stale version; deleted before commit"
+    }
+  },
+  "dataFields": {
+    "plan": [
+      "title",
+      "startDate",
+      "endDate",
+      "priority",
+      "success",
+      "estimatedMinutes",
+      "sourceReviewId?",
+      "improvement?"
+    ],
+    "task": [
+      "title",
+      "planId",
+      "dueDate",
+      "priority",
+      "tags[]",
+      "notes",
+      "estimatedMinutes",
+      "learning",
+      "understanding=null|이해했어요|복습 필요",
+      "completed:boolean",
+      "cycle:number",
+      "routineId?",
+      "occurrenceDate?",
+      "routineVersion?"
+    ],
+    "execution": [
+      "taskId",
+      "start:UTC ISO",
+      "end:UTC ISO",
+      "durationSeconds:integer",
+      "content:server summary or user text",
+      "activity?:학습|복습|실습|정리|과제|작성|진행",
+      "memo?:optional user text",
+      "blockedReason"
+    ],
+    "exam": [
+      "title:SQLD|ADsP",
+      "examDate",
+      "mode:7|14|custom",
+      "customDate?",
+      "startDate:computed"
+    ],
+    "routine": [
+      "title",
+      "planId",
+      "startDate",
+      "endDate",
+      "weekdays:0..6[]",
+      "priority",
+      "tags[]",
+      "estimatedMinutes",
+      "learning"
+    ],
+    "review": [
+      "planId",
+      "startDate",
+      "endDate",
+      "content",
+      "improvement"
+    ]
+  },
+  "relations": {
+    "task.planId": "plan.id",
+    "execution.taskId": "task.id",
+    "routine.planId": "plan.id",
+    "task.routineId": "routine.id",
+    "review.planId": "plan.id",
+    "plan.sourceReviewId": "review.id"
+  },
+  "relationEnforcement": "server validates references; soft deletion preserves history. No SQL foreign keys over JSON fields.",
+  "priority": [
+    "높음",
+    "보통",
+    "낮음"
+  ],
+  "dates": "date-only fields YYYY-MM-DD Seoul calendar; execution receives explicit offset, normalizes UTC; actual time exact integer seconds",
+  "aggregation": "selected plan nondeleted tasks due in inclusive selected dates; completed current boolean; delayed incomplete due before Seoul today; blocked distinct tasks with nonempty execution reason; estimated task minutes sum; actual all related execution seconds sum/60; difference actual-estimated; empty zero",
+  "export": "one JSON containing schemaVersion/timezone/exportedAt/all records including soft-deleted/history/completions; excludes runtime secrets and internal request bodies",
+  "completeAction": "POST action=complete,kind=task,id,version,requestId,execution:{start,end,activity or content,memo?,blockedReason}. Server sets taskId, requires positive actual duration, normalizes UTC and atomically writes task completed/cycle, execution, completion, history and idempotency result with executionId. Same request retries do not duplicate. Undo preserves execution history. Legacy toggle remains supported.",
+  "authentication": {
+    "accountDeletion": "auth_user deletion cascades owned records and experiments",
+    "password": "scrypt N32768 r8 p3, salt16bytes, dkLen64",
+    "origin": "same-origin writes required",
+    "legacy": "unowned rows hidden until server-authorized one-time owner claim",
+    "library": "Better Auth 1.7.10 + username",
+    "session": "D1 server session; HttpOnly, SameSite=Lax, Secure in HTTPS; 7 day expiry; 1 day renewal; cookie cache disabled"
+  },
+  "experiments": {
+    "metric": "daily completion rate (%)",
+    "rounding": "mean of unrounded daily fractions, display two decimals",
+    "missing": "null; no tasks=null excluded",
+    "change": "exactly once after day2 record and before day3 record",
+    "weekStarts": "Monday",
+    "tables": [
+      "experiment_config",
+      "experiment_days",
+      "experiment_change"
+    ],
+    "dates": "server Asia/Seoul actual current date only; at most 5 distinct days"
+  }
+}

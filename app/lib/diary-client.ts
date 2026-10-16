@@ -16,6 +16,7 @@ export async function diaryRequest<T = DiaryResponse>(
         },
   );
   const data = (await response.json()) as { error?: string };
+  if(response.status===401 && typeof window!=="undefined")window.dispatchEvent(new Event('pds-session-expired'));
   if (!response.ok)
     throw new Error(
       data.error ?? "자료를 처리하지 못했습니다. 다시 시도하세요.",

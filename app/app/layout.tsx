@@ -5,6 +5,7 @@ import "./plan-browser.css";
 import "./review-chart.css";
 import "./execution-calendar.css";
 import "./complete-task.css";
+import "./auth.css";
 
 export const metadata: Metadata = {
   title: "PDS diary — 오늘의 계획과 기록",

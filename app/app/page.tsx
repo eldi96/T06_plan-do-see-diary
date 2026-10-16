@@ -30,6 +30,8 @@ import { diaryRequest } from "../lib/diary-client";
 import { PlanBrowser } from "../components/plan-browser";
 import { ExecutionCalendar } from "../components/execution-calendar";
 import { CompleteTaskDialog } from "../components/complete-task-dialog";
+import { AuthGate } from "../components/auth-gate";
+import { ExperimentPanel } from "../components/experiment-panel";
 import { ReviewChart } from "../components/monthly-chart";
 import {
   seoulToday,
@@ -136,6 +138,9 @@ function Field({
   );
 }
 export default function Home() {
+  return <AuthGate><DiaryHome/></AuthGate>;
+}
+function DiaryHome() {
   const [completingTask,setCompletingTask]=useState<Task|null>(null);
   const [items, setItems] = useState<Item[]>([]),
     [history, setHistory] = useState<HistoryEntry[]>([]),
@@ -720,7 +725,7 @@ export default function Home() {
           <div className="public-notice">
             <Info size={17} />
             <span>
-              지금은 로그인이 없어 링크를 아는 사람은 누구나 볼 수 있습니다.
+              로그인한 계정의 자료만 표시됩니다.
               남이 봐도 괜찮은 내용만 넣으세요.
             </span>
           </div>
@@ -1230,7 +1235,7 @@ export default function Home() {
               )}
             </section></details></>
           )}
-          {tab === "review" && <ReviewChart tasks={tasks} completions={completions} plans={plans} onTask={task=>open("task",task)}/>}
+          {tab === "review" && <><ReviewChart tasks={tasks} completions={completions} plans={plans} onTask={task=>open("task",task)}/><ExperimentPanel/></>}
           {tab === "review" && plan && (
             <>
               <section className="panel">

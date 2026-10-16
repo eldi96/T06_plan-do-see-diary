@@ -115,9 +115,10 @@ export interface DiaryResponse {
   completions: CompletionEntry[];
 }
 export interface DiaryExport extends DiaryResponse {
-  schemaVersion: 2;
+  schemaVersion: 3;
   timezone: "Asia/Seoul";
   exportedAt: string;
+  experiment?: {config:unknown;days:unknown[];change:unknown};
   completions: CompletionEntry[];
 }
 export interface MutationResult {

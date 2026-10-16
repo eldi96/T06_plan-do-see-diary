@@ -1,5 +1,6 @@
 import { env } from "cloudflare:workers";
 import { z } from "zod";
+import { requireSession, assertSameOrigin } from "../../../lib/auth-server";
 import { isCalendarDate, examStartDate } from "../../../domain/dates";
 import { executionDurationSeconds } from "../../../domain/validation";
 import {
@@ -117,36 +118,47 @@ function unpack(r: Row) {
   };
 }
 const headers = { "Cache-Control": "no-store" };
-async function load() {
+async function load(userId: string) {
   const rows = await db()
-    .prepare("SELECT * FROM records ORDER BY updated_at,id")
+    .prepare("SELECT * FROM records WHERE owner_id=? ORDER BY updated_at,id").bind(userId)
     .all<Row>();
   return rows.results.map(unpack);
 }
 export async function GET(request: Request) {
   try {
-    const data = await load();
+    const session = await requireSession(request);
+    if (!session) return Response.json({error:"로그인이 필요합니다."},{status:401,headers});
+    const userId=session.user.id;
+    const data = await load(userId);
+    const target=new URL(request.url).searchParams.get("id");
+    if(target){const record=data.find(r=>r.id===target);return record?Response.json({record},{headers}):Response.json({error:"자료를 찾을 수 없습니다."},{status:404,headers});}
     if (new URL(request.url).searchParams.has("export")) {
       const [h, c] = await Promise.all([
-        db().prepare("SELECT * FROM history ORDER BY created_at,id").all(),
-        db().prepare("SELECT * FROM completions ORDER BY created_at,id").all(),
+        db().prepare("SELECT * FROM history WHERE owner_id=? ORDER BY created_at,id").bind(userId).all(),
+        db().prepare("SELECT * FROM completions WHERE owner_id=? ORDER BY created_at,id").bind(userId).all(),
+      ]);
+      const [experimentConfig,experimentDays,experimentChange]=await Promise.all([
+        db().prepare('SELECT * FROM experiment_config WHERE owner_id=?').bind(userId).first(),
+        db().prepare('SELECT * FROM experiment_days WHERE owner_id=? ORDER BY day').bind(userId).all(),
+        db().prepare('SELECT * FROM experiment_change WHERE owner_id=?').bind(userId).first(),
       ]);
       return Response.json(
         {
-          schemaVersion: 2,
+          schemaVersion: 3,
           timezone: "Asia/Seoul",
           exportedAt: new Date().toISOString(),
           records: data,
           history: h.results,
           completions: c.results,
+          experiment:{config:experimentConfig,days:experimentDays.results,change:experimentChange},
         },
         { headers },
       );
     }
     const h = await db()
-      .prepare("SELECT * FROM history ORDER BY created_at DESC")
+      .prepare("SELECT * FROM history WHERE owner_id=? ORDER BY created_at DESC").bind(userId)
       .all();
-    const c = await db().prepare("SELECT * FROM completions ORDER BY created_at,id").all();
+    const c = await db().prepare("SELECT * FROM completions WHERE owner_id=? ORDER BY created_at,id").bind(userId).all();
     return Response.json({ records: data, history: h.results, completions: c.results }, { headers });
   } catch {
     return Response.json(
@@ -158,13 +170,19 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   let key = "",
     fingerprint = "";
+  let userId="";
   try {
+    const session = await requireSession(request);
+    if (!session) return Response.json({error:"로그인이 필요합니다."},{status:401,headers});
+    userId=session.user.id;
+    const originError=assertSameOrigin(request);if(originError)return originError;
+    if(Number(request.headers.get("content-length")??0)>100000)return Response.json({error:"요청이 너무 큽니다."},{status:413,headers});
     const body: any = await request.json();
     key = z.string().uuid().parse(body.requestId);
-    fingerprint = JSON.stringify(body);
+    fingerprint = Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(JSON.stringify(body)))),byte=>byte.toString(16).padStart(2,'0')).join('');
     const prior = await db()
-      .prepare("SELECT * FROM requests WHERE id=?")
-      .bind(key)
+      .prepare("SELECT * FROM requests WHERE id=? AND owner_id=?")
+      .bind(key,userId)
       .first<{ fingerprint: string; result: string }>();
     if (prior) {
       if (prior.fingerprint !== fingerprint)
@@ -179,9 +197,11 @@ export async function POST(request: Request) {
       .enum(["plan", "task", "execution", "exam", "review", "routine"])
       .parse(body.kind) as Kind;
     const id = body.id ? z.string().uuid().parse(body.id) : crypto.randomUUID();
+    const found=await db().prepare("SELECT owner_id FROM records WHERE id=?").bind(id).first<{owner_id:string|null}>();
+    if(found&&found.owner_id!==userId)return Response.json({error:"자료를 찾을 수 없습니다."},{status:404,headers});
     const row = await db()
-      .prepare("SELECT * FROM records WHERE id=?")
-      .bind(id)
+      .prepare("SELECT * FROM records WHERE id=? AND owner_id=?")
+      .bind(id,userId)
       .first<Row>();
     if (row && (row.kind !== kind || row.deleted))
       throw new Error("대상이 없거나 삭제되었습니다.");
@@ -244,9 +264,9 @@ export async function POST(request: Request) {
     if (action === "save" && ["task", "review", "routine"].includes(kind)) {
       const parent = await db()
         .prepare(
-          "SELECT * FROM records WHERE id=? AND kind='plan' AND deleted=0",
+          "SELECT * FROM records WHERE id=? AND owner_id=? AND kind='plan' AND deleted=0",
         )
-        .bind(value.planId)
+        .bind(value.planId,userId)
         .first<Row>();
       if (!parent) throw new Error("연결할 계획을 선택하세요.");
       if (kind === "routine") {
@@ -258,17 +278,17 @@ export async function POST(request: Request) {
     if (action === "save" && kind === "execution") {
       const task = await db()
         .prepare(
-          "SELECT * FROM records WHERE id=? AND kind='task' AND deleted=0",
+          "SELECT * FROM records WHERE id=? AND owner_id=? AND kind='task' AND deleted=0",
         )
-        .bind(value.taskId)
+        .bind(value.taskId,userId)
         .first<Row>();
       if (!task) throw new Error("연결할 할 일이 없습니다.");
       const taskValue = unpack(task);
       const parent = await db()
         .prepare(
-          "SELECT id FROM records WHERE id=? AND kind='plan' AND deleted=0",
+          "SELECT id FROM records WHERE id=? AND owner_id=? AND kind='plan' AND deleted=0",
         )
-        .bind(taskValue.planId)
+        .bind(taskValue.planId,userId)
         .first();
       if (!parent) throw new Error("연결할 계획이 삭제되었습니다.");
       if (value.activity)
@@ -281,12 +301,17 @@ export async function POST(request: Request) {
     if (action === "save" && kind === "plan" && value.sourceReviewId) {
       const review = await db()
         .prepare(
-          "SELECT * FROM records WHERE id=? AND kind='review' AND deleted=0",
+          "SELECT * FROM records WHERE id=? AND owner_id=? AND kind='review' AND deleted=0",
         )
-        .bind(value.sourceReviewId)
+        .bind(value.sourceReviewId,userId)
         .first<Row>();
       if (!review) throw new Error("연결할 돌아보기가 없습니다.");
     }
+    if(action==="save"&&kind==="task"&&value.routineId){
+      const routine=await db().prepare("SELECT data FROM records WHERE id=? AND owner_id=? AND kind='routine' AND deleted=0").bind(value.routineId,userId).first<{data:string}>();
+      if(!routine||JSON.parse(routine.data).planId!==value.planId)return Response.json({error:"자료를 찾을 수 없습니다."},{status:404,headers});
+    }
+    const guardKey=userId+":"+key;
     const now = new Date().toISOString(),
       version = (row?.version ?? 0) + 1;
     const result = { ok: true, id, version, ...(completionExecutionId?{executionId:completionExecutionId}:{}) };
@@ -298,18 +323,18 @@ export async function POST(request: Request) {
       statements.push(
         db()
           .prepare(
-            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records WHERE id=? AND kind='plan' AND deleted=0) THEN 1 ELSE 0 END",
+            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records WHERE id=? AND owner_id=? AND kind='plan' AND deleted=0) THEN 1 ELSE 0 END",
           )
-          .bind(key + ":parent", value.planId),
+          .bind(guardKey + ":parent", value.planId,userId),
       );
     } else if (action === "save" && kind === "execution") {
       parentGuard = true;
       statements.push(
         db()
           .prepare(
-            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records t JOIN records p ON p.id=json_extract(t.data,'$.planId') WHERE t.id=? AND t.kind='task' AND t.deleted=0 AND p.kind='plan' AND p.deleted=0) THEN 1 ELSE 0 END",
+            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records t JOIN records p ON p.id=json_extract(t.data,'$.planId') WHERE t.id=? AND t.owner_id=? AND p.owner_id=? AND t.kind='task' AND t.deleted=0 AND p.kind='plan' AND p.deleted=0) THEN 1 ELSE 0 END",
           )
-          .bind(key + ":parent", value.taskId),
+          .bind(guardKey + ":parent", value.taskId,userId,userId),
       );
     }
     // A failed compare-and-swap MUST abort the complete batch, including history/completion inserts.
@@ -317,17 +342,17 @@ export async function POST(request: Request) {
       statements.push(
         db()
           .prepare(
-            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records WHERE id=? AND version=? AND deleted=0) THEN 1 ELSE 0 END",
+            "INSERT INTO mutation_guards(id,valid) SELECT ?,CASE WHEN EXISTS(SELECT 1 FROM records WHERE id=? AND version=? AND owner_id=? AND deleted=0) THEN 1 ELSE 0 END",
           )
-          .bind(key, id, row.version),
+          .bind(guardKey, id, row.version,userId),
       );
     if (row)
       statements.push(
         db()
           .prepare(
-            "INSERT INTO history(id,record_id,kind,data,version,created_at) SELECT ?,id,kind,data,version,? FROM records WHERE id=?",
+            "INSERT INTO history(id,record_id,kind,data,version,created_at,owner_id) SELECT ?,id,kind,data,version,?,owner_id FROM records WHERE id=? AND owner_id=?",
           )
-          .bind(crypto.randomUUID(), now, id),
+          .bind(crypto.randomUUID(), now, id,userId),
       );
     const occurrence =
       kind === "exam"
@@ -342,7 +367,7 @@ export async function POST(request: Request) {
       statements.push(
         db()
           .prepare(
-            "UPDATE records SET data=?,version=?,deleted=?,occurrence=?,updated_at=? WHERE id=? AND version=?",
+            "UPDATE records SET data=?,version=?,deleted=?,occurrence=?,updated_at=? WHERE id=? AND version=? AND owner_id=?",
           )
           .bind(
             JSON.stringify(value),
@@ -352,25 +377,26 @@ export async function POST(request: Request) {
             now,
             id,
             row.version,
+            userId,
           ),
       );
     else
       statements.push(
         db()
           .prepare(
-            "INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at) VALUES(?,?,?,1,0,?,?)",
+            "INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at,owner_id) VALUES(?,?,?,1,0,?,?,?)",
           )
-          .bind(id, kind, JSON.stringify(value), occurrence, now),
+          .bind(id, kind, JSON.stringify(value), occurrence, now,userId),
       );
     if (completionExecution)
-      statements.push(db().prepare("INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at) VALUES(?,'execution',?,1,0,NULL,?)").bind(completionExecutionId,JSON.stringify(completionExecution),now));
+      statements.push(db().prepare("INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at,owner_id) VALUES(?,'execution',?,1,0,NULL,?,?)").bind(completionExecutionId,JSON.stringify(completionExecution),now,userId));
     if ((action === "toggle" || action === "complete") && value.completed)
       statements.push(
         db()
           .prepare(
-            "INSERT INTO completions(id,task_id,cycle,request_id,created_at) VALUES(?,?,?,?,?)",
+            "INSERT INTO completions(id,task_id,cycle,request_id,created_at,owner_id) VALUES(?,?,?,?,?,?)",
           )
-          .bind(crypto.randomUUID(), id, value.cycle, key, now),
+          .bind(crypto.randomUUID(), id, value.cycle, key, now,userId),
       );
     if (kind === "routine" && action === "save") {
       for (
@@ -400,13 +426,14 @@ export async function POST(request: Request) {
         statements.push(
           db()
             .prepare(
-              "INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at) VALUES(?,'task',?,1,0,?,?) ON CONFLICT(occurrence) DO NOTHING",
+              "INSERT INTO records(id,kind,data,version,deleted,occurrence,updated_at,owner_id) VALUES(?,'task',?,1,0,?,?,?) ON CONFLICT(owner_id,occurrence) DO NOTHING",
             )
             .bind(
               crypto.randomUUID(),
               JSON.stringify(task),
               `${id}:${day}`,
               now,
+              userId,
             ),
         );
       }
@@ -414,19 +441,19 @@ export async function POST(request: Request) {
     statements.push(
       db()
         .prepare(
-          "INSERT INTO requests(id,fingerprint,result,created_at) VALUES(?,?,?,?)",
+          "INSERT INTO requests(id,fingerprint,result,created_at,owner_id) VALUES(?,?,?,?,?)",
         )
-        .bind(key, fingerprint, JSON.stringify(result), now),
+        .bind(key, fingerprint, JSON.stringify(result), now,userId),
     );
     if (row)
       statements.push(
-        db().prepare("DELETE FROM mutation_guards WHERE id=?").bind(key),
+        db().prepare("DELETE FROM mutation_guards WHERE id=?").bind(guardKey),
       );
     if (parentGuard)
       statements.push(
         db()
           .prepare("DELETE FROM mutation_guards WHERE id=?")
-          .bind(key + ":parent"),
+          .bind(guardKey + ":parent"),
       );
     await db().batch(statements);
     return Response.json(result, { headers });
@@ -434,8 +461,8 @@ export async function POST(request: Request) {
     if (key) {
       try {
         const existing = await db()
-          .prepare("SELECT * FROM requests WHERE id=?")
-          .bind(key)
+          .prepare("SELECT * FROM requests WHERE id=? AND owner_id=?")
+          .bind(key,userId)
           .first<{ fingerprint: string; result: string }>();
         if (existing && existing.fingerprint === fingerprint)
           return Response.json(JSON.parse(existing.result), { headers });
@@ -457,6 +484,7 @@ export async function POST(request: Request) {
         { error: "다른 화면에서 변경되었습니다. 새로고침 후 다시 시도하세요." },
         { status: 409 },
       );
+    if(["대상이","연결할"].some(prefix=>message.startsWith(prefix)))return Response.json({error:"자료를 찾을 수 없습니다."},{status:404,headers});
     const safe = ["대상이", "할 일만", "연결할", "반복 기간"].some((s) =>
       message.startsWith(s),
     );
