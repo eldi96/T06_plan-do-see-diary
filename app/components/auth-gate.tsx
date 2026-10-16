@@ -6,6 +6,8 @@ import type {FormEvent, ReactNode} from 'react';
 type User = {id: string; username: string};
 type Session = {user?: User; legacyClaimPending?: boolean};
 const AccountTriggerContext = createContext<ReactNode>(null);
+const DiaryAccountContext = createContext<User|null>(null);
+export function useDiaryAccount(){return useContext(DiaryAccountContext);}
 
 export function AccountMenuTrigger() {
   return <div className="auth-account-slot">{useContext(AccountTriggerContext)}</div>;
@@ -183,7 +185,7 @@ export function AuthGate({children}: {children: ReactNode}) {
       <svg className="auth-account-chevron" aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="m9 6 6 6-6 6"/></svg>
     </button>}>
     {legacyPending && <p className="auth-legacy-notice" role="status">기존 기록의 계정 연결을 준비 중입니다. 연결 전에는 기존 기록이 표시되지 않습니다.</p>}
-    <div key={user.id}>{children}</div>
+    <DiaryAccountContext.Provider value={user}><div key={user.id}>{children}</div></DiaryAccountContext.Provider>
     {accountOpen && <dialog ref={dialog} className="auth-dialog" data-keyboard={keyboard} aria-labelledby="auth-account-title"
       onCancel={event => {event.preventDefault(); if (!busy) setAccountOpen(false);}}>
       <div className="auth-dialog-header"><div><p className="auth-brand">내 계정</p><h2 id="auth-account-title">{user.username}</h2></div>

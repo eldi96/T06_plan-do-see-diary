@@ -30,7 +30,7 @@ import { diaryRequest } from "../lib/diary-client";
 import { PlanBrowser } from "../components/plan-browser";
 import { ExecutionCalendar } from "../components/execution-calendar";
 import { CompleteTaskDialog } from "../components/complete-task-dialog";
-import { AuthGate, AccountMenuTrigger } from "../components/auth-gate";
+import { AuthGate, AccountMenuTrigger, useDiaryAccount } from "../components/auth-gate";
 import { ExperimentPanel } from "../components/experiment-panel";
 import { ReviewChart } from "../components/monthly-chart";
 import {
@@ -67,6 +67,7 @@ const planTemplates = [
   {title:"개인 프로젝트",success:"작은 기능 하나를 완성하고 동작 확인하기"},
   {title:"생활 정리",success:"정한 공간이나 생활 할 일을 정리하기"},
 ];
+const personalPlanTemplates = ["파이썬 복습","네트워크 강의 정리","ALEPH 과제","네트워크 사전강의","AWS 강의","블로그 작성","와이어샤크 공부","리눅스 공부","자격증 준비"].map(title=>({title,success:successExamples(title)[0]}));
 function successExamples(title: string): string[] {
   if (/블로그/.test(title))
     return ["학습 내용을 정리한 글 1편 발행", "글에 실습 결과와 배운 점 포함"];
@@ -140,6 +141,8 @@ export default function Home() {
   return <AuthGate><DiaryHome/></AuthGate>;
 }
 function DiaryHome() {
+  const account=useDiaryAccount();
+  const starterTemplates=account?.username==='eldi96'?personalPlanTemplates:planTemplates;
   const [completingTask,setCompletingTask]=useState<Task|null>(null);
   const [items, setItems] = useState<Item[]>([]),
     [history, setHistory] = useState<HistoryEntry[]>([]),
@@ -1084,8 +1087,8 @@ function DiaryHome() {
           {tab === "plans" && (
             <>
               <section className="panel plan-starters">
-                <div className="section-head"><h2>빠르게 시작하기</h2><span className="muted">필요한 분야를 골라 나만의 계획으로 바꿔보세요.</span></div>
-                <div className="suggestions">{planTemplates.map(template=><button key={template.title} onClick={()=>open("plan",undefined,template)}><Plus size={14}/>{template.title}</button>)}</div>
+                <div className="section-head"><h2>빠르게 시작하기</h2><span className="muted">{account?.username==='eldi96'?'나의 학습 목록에서 새 계획을 시작하세요.':'필요한 분야를 골라 나만의 계획으로 바꿔보세요.'}</span></div>
+                <div className="suggestions">{starterTemplates.map(template=><button key={template.title} onClick={()=>open("plan",undefined,template)}><Plus size={14}/>{template.title}</button>)}</div>
               </section>
               <PlanBrowser plans={plans} tasks={tasks} selectedId={planId} busy={busy}
                 onAdd={()=>open("plan")}
