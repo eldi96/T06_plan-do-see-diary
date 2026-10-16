@@ -52,6 +52,7 @@
 | 차트 | Bklit 기반 차트 소스, Visx, D3 |
 | 서버 | Cloudflare Workers, Zod 입력 검증 |
 | DB | Cloudflare D1, Drizzle 스키마·SQL 마이그레이션 |
+| 공휴일 | date-holidays 3.37.0, 한국 공휴일 규칙과 공식 발표 보정 |
 | 배포 | ChatGPT Sites |
 
 서버 API의 핵심 저장은 D1의 준비된 SQL과 `batch`를 사용합니다. 스키마·마이그레이션 구성과 실제 API의 직접 SQL 처리를 함께 사용합니다.
@@ -168,3 +169,5 @@ T06 기준 커밋: [7bcdca57e899519720d5e1512a40c8a8e65a7098](https://github.com
 ### 검증과 남은 범위
 
 격리 Worker·D1에서 실제 API 검증110개, 같은 비밀번호의 서로 다른 저장 해시, 세션 만료 거절, 계정 삭제 후 자료 잔여0건을 확인했습니다. 실제 사용자의5일 관찰과 규칙 변경은 사용자가 수행해야 하며, 코드 검증만으로 완료된 것으로 표시하지 않습니다.
+
+공휴일 계산은 [date-holidays](https://github.com/commenthol/date-holidays)의 ISC/CC-BY-3.0 데이터에 기반하며 한국천문연구원·정부 발표를 기준으로 보정합니다. 향후 임시공휴일과 법령 변경은 데이터 갱신이 필요합니다.

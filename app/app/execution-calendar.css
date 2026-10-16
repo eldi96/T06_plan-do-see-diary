@@ -21,3 +21,5 @@ html[data-input-method=keyboard] .calendar-layout,html[data-input-method=keyboar
 .calendar-day.level-full.is-saturday:not(.is-holiday)>span{color:#284b6b}
 .calendar-day.is-today>span{font-weight:700}
 @media(max-width:760px){.calendar-holiday-name{font-size:8px}}
+.calendar-day.level-high.is-sunday>span,.calendar-day.level-high.is-holiday>span,.calendar-day.level-full.is-sunday>span,.calendar-day.level-full.is-holiday>span,.calendar-day.level-high .calendar-holiday-name,.calendar-day.level-full .calendar-holiday-name{color:#693a37}
+.calendar-day.level-high.is-saturday:not(.is-holiday)>span{color:#284b6b}

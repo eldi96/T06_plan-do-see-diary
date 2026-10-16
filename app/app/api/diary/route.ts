@@ -288,7 +288,7 @@ export async function POST(request: Request) {
         .first<Row>();
       if (!task) throw new Error("연결할 할 일이 없습니다.");
       const taskValue = unpack(task);
-      if (!row && taskValue.dueDate > seoulToday())
+      if ((!row || old?.taskId !== value.taskId) && taskValue.dueDate > seoulToday())
         return Response.json({error:"미래 날짜의 할 일은 아직 기록할 수 없습니다."},{status:400,headers});
       const parent = await db()
         .prepare(
