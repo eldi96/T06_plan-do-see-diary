@@ -13,8 +13,13 @@ async function authRequest(path: string, body?: object): Promise<Session> {
     body: body ? JSON.stringify(body) : undefined,
   });
   if (!response.ok) {
+    const detail = await response.json().catch(() => null) as {code?: string} | null;
     const error = new Error(response.status === 429
       ? '요청이 많습니다. 잠시 후 다시 시도해 주세요.'
+      : response.status === 400 && detail?.code === 'OWNER_SETUP_REQUIRED'
+      ? '기존 기록 연결 확인코드가 필요합니다. 아래 확인코드를 입력하거나 입력한 코드를 확인해 주세요.'
+      : response.status >= 500
+      ? '서버 연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.'
       : '요청을 완료하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.');
     Object.assign(error, {status: response.status});
     throw error;
@@ -98,6 +103,11 @@ export function AuthGate({children}: {children: ReactNode}) {
     inFlight.current = true; setBusy(true);
     try {
       const ownerSetupKey=String(data.get('ownerSetupKey')||'').trim();
+      if (signup && username === 'eldi96' && !ownerSetupKey) {
+        form.querySelector<HTMLDetailsElement>('details')?.setAttribute('open', '');
+        form.querySelector<HTMLInputElement>('[name="ownerSetupKey"]')?.focus();
+        throw new Error('eldi96은 기존 기록을 보호하는 아이디입니다. 기존 기록 연결 확인코드를 입력해 주세요.');
+      }
       const session = await authRequest(signup ? 'sign-up' : 'sign-in', {username, password, ...(signup&&ownerSetupKey?{ownerSetupKey}:{})});
       if(ownerSetupKey){
         const claim=await fetch('/api/owner-claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupKey:ownerSetupKey})});
@@ -146,7 +156,9 @@ export function AuthGate({children}: {children: ReactNode}) {
         {signup && <p className="auth-hint" id="auth-id-hint">영문·숫자·밑줄·마침표로 3~30자 · 영문은 소문자로 저장됩니다.</p>}
         <PasswordField label="비밀번호" name="password" autoComplete={signup ? 'new-password' : 'current-password'} minLength={signup ? 4 : 1}/>
         {signup && <><p className="auth-hint">비밀번호는 4자 이상으로 설정해 주세요.</p><PasswordField label="비밀번호 확인" name="confirmPassword" autoComplete="new-password" minLength={4}/></>}
-        <details><summary className="auth-hint">기존 기록 연결 · 해당하는 경우만</summary><PasswordField label="기존 기록 연결 확인코드" name="ownerSetupKey" autoComplete="off" required={false}/></details>
+        <details open={signup}><summary className="auth-hint">기존 기록 연결 · 해당하는 경우만</summary>
+          <p className="auth-hint">기존 기록의 주인인 eldi96으로 처음 가입할 때는 별도로 전달된 연결 확인코드가 필요합니다. 다른 아이디로 가입할 때는 비워 두세요.</p>
+          <PasswordField label="기존 기록 연결 확인코드" name="ownerSetupKey" autoComplete="off" required={false}/></details>
         {error && <p className="auth-error" role="alert">{error}</p>}
         {notice && <p className="auth-notice" role="status">{notice}</p>}
         <button className="auth-primary" type="submit">{busy ? '확인 중…' : signup ? '내 공간 만들기' : '로그인'}</button>
