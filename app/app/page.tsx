@@ -57,17 +57,6 @@ const nav = [
   ["review", "돌아보기", BarChart3],
   ["exams", "시험 일정", GraduationCap],
 ] as const;
-const subjects = [
-  "파이썬 복습",
-  "네트워크 강의 정리",
-  "ALEPH 과제",
-  "네트워크 사전강의",
-  "AWS 강의",
-  "블로그 작성",
-  "와이어샤크 공부",
-  "리눅스 공부",
-  "자격증 준비",
-];
 function successExamples(title: string): string[] {
   if (/블로그/.test(title))
     return ["학습 내용을 정리한 글 1편 발행", "글에 실습 결과와 배운 점 포함"];
@@ -1081,25 +1070,6 @@ function DiaryHome() {
           )}
           {tab === "plans" && (
             <>
-              <section className="panel plan-starters">
-                <div className="section-head">
-                  <h2>계획 추가</h2>
-                  <span className="muted">
-                    분야를 선택해 새 계획을 시작합니다.
-                  </span>
-                </div>
-                <div className="suggestions">
-                  {subjects.map((s) => (
-                    <button
-                      key={s}
-                      onClick={() => open("plan", undefined, { title: s })}
-                    >
-                      <Plus size={12} />
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </section>
               <PlanBrowser plans={plans} tasks={tasks} selectedId={planId} busy={busy}
                 onAdd={()=>open("plan")}
                 onSelect={selectPlan} onEdit={p => open("plan", p)} onHistory={p => open("history", p)}
@@ -1380,9 +1350,16 @@ function DiaryHome() {
           )}
           {tab === "exams" && (
             <>
+              <section className="panel">
+                <div className="section-head">
+                  <h2>내 시험 일정</h2>
+                  <button className="primary push" onClick={() => open("exam")}><Plus size={16}/>시험 일정 추가</button>
+                </div>
+                {!exams.length && <p className="muted">등록한 시험 일정이 없어요. 준비할 시험과 날짜를 직접 추가해 보세요.</p>}
+              </section>
               <div className="exam-grid">
-                {["SQLD", "ADsP"].map((name) => {
-                  const e = exams.find((e) => e.title === name),
+                {exams.map((e) => {
+                  const name = e.title,
                     state = e
                       ? examStatus({
                           examDate: e.examDate,
