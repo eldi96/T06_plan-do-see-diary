@@ -1280,3 +1280,17 @@ html[data-input-method="keyboard"] button {
 .shell[data-view="records"] .page-heading{min-height:0;padding:20px 0 16px}
 .shell[data-view="records"] .page-heading h1{font-size:28px;line-height:1.3}
 .shell[data-view="records"] .page-heading .eyebrow,.shell[data-view="records"] .page-heading .plan-selector{display:none}
+
+/* 예상 시간: 자주 쓰는 두 선택, 레이아웃 이동 없이 즉시 반영. */
+.estimated-time{min-width:0;border:0;margin:0;padding:0}
+.estimated-time legend{padding:0;margin-bottom:8px;font-size:12px;color:#b0c2c1}
+.estimated-time-options{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border:1px solid var(--line);border-radius:12px;background:#111c1e}
+.estimated-time-options label{position:relative;min-width:0;cursor:pointer;touch-action:manipulation}
+.estimated-time-options input{position:absolute;width:1px;height:1px;min-height:0;margin:0;padding:0;opacity:0;clip-path:inset(50%)}
+.estimated-time-options span{display:flex;align-items:center;justify-content:center;min-height:44px;border-radius:8px;font-size:14px;font-weight:550;color:var(--muted);transition:background-color 140ms ease,color 140ms ease}
+.estimated-time-options input:checked+span{background:#9de2cb;color:#15382c;box-shadow:0 1px 3px #0002}
+.estimated-time-options input:focus-visible+span{outline:2px solid var(--mint);outline-offset:3px}
+.estimated-time>.micro{margin-top:8px}
+@media(hover:hover) and (pointer:fine){.estimated-time-options label:hover input:not(:checked)+span{background:#ffffff08;color:var(--text)}.estimated-time-options label:active span{transform:scale(.98)}}
+html[data-input-method=keyboard] .estimated-time-options span{transition:none;transform:none}
+@media(prefers-reduced-motion:reduce){.estimated-time-options span{transition:none!important;transform:none!important}}

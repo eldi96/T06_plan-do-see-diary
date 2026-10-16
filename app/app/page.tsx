@@ -258,7 +258,7 @@ function DiaryHome() {
             endDate: addDays(today, 6),
             success: "",
             priority: "보통",
-            estimatedMinutes: "",
+            estimatedMinutes: 30,
           }
         : kind === "task"
           ? {
@@ -268,7 +268,7 @@ function DiaryHome() {
               tags: [],
               notes: "",
               priority: "보통",
-              estimatedMinutes: "",
+              estimatedMinutes: 30,
               learning: true,
               understanding: null,
             }
@@ -281,7 +281,7 @@ function DiaryHome() {
                 weekdays: [1, 2, 3, 4, 5],
                 tags: [],
                 priority: "보통",
-                estimatedMinutes: "",
+                estimatedMinutes: 30,
                 learning: true,
               }
             : kind === "execution"
@@ -1544,81 +1544,20 @@ function DiaryHome() {
                       ))}
                     </select>
                   </Field>
-                  <div className="field">
-                    <label htmlFor="estimated-minutes">예상 시간 (분)</label>
-                    <div className="minute-input">
-                      <button
-                        type="button"
-                        aria-label="예상 시간 5분 줄이기"
-                        onClick={() =>
-                          edit(
-                            "estimatedMinutes",
-                            Math.max(
-                              0,
-                              (Number(draft.estimatedMinutes) || 0) - 5,
-                            ),
-                          )
-                        }
-                      >
-                        −5
-                      </button>
-                      <input
-                        id="estimated-minutes"
-                        required
-                        type="text"
-                        inputMode="numeric"
-                        pattern="[0-9]+"
-                        maxLength={6}
-                        placeholder="예: 30"
-                        value={draft.estimatedMinutes ?? ""}
-                        onChange={(e) =>
-                          edit("estimatedMinutes", e.target.value)
-                        }
-                        onKeyDown={(e) => {
-                          if (e.key === "ArrowUp" || e.key === "ArrowDown") {
-                            e.preventDefault();
-                            edit(
-                              "estimatedMinutes",
-                              Math.min(
-                                100000,
-                                Math.max(
-                                  0,
-                                  (Number(draft.estimatedMinutes) || 0) +
-                                    (e.key === "ArrowUp" ? 5 : -5),
-                                ),
-                              ),
-                            );
-                          }
-                        }}
-                      />
-                      <button
-                        type="button"
-                        aria-label="예상 시간 5분 늘리기"
-                        onClick={() =>
-                          edit(
-                            "estimatedMinutes",
-                            Math.min(
-                              100000,
-                              (Number(draft.estimatedMinutes) || 0) + 5,
-                            ),
-                          )
-                        }
-                      >
-                        +5
-                      </button>
-                    </div>
-                    <div className="minute-presets">
-                      {[15, 30, 60].map((n) => (
-                        <button
-                          type="button"
-                          key={n}
-                          onClick={() => edit("estimatedMinutes", n)}
-                        >
-                          {n}분
-                        </button>
+                  <fieldset className="estimated-time">
+                    <legend>예상 시간</legend>
+                    <div className="estimated-time-options">
+                      {[30, 60].map((minutes) => (
+                        <label key={minutes}>
+                          <input type="radio" name="estimated-time" value={minutes}
+                            checked={Number(draft.estimatedMinutes) === minutes}
+                            onChange={() => edit("estimatedMinutes", minutes)}/>
+                          <span>{minutes === 30 ? "30분" : "1시간"}</span>
+                        </label>
                       ))}
                     </div>
-                  </div>
+                    {![30, 60].includes(Number(draft.estimatedMinutes)) && <p className="micro">기존 예상 시간 {draft.estimatedMinutes}분은 선택을 바꾸기 전까지 유지됩니다.</p>}
+                  </fieldset>
                 </div>
               </>
             )}
