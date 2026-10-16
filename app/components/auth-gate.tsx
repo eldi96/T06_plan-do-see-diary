@@ -57,7 +57,7 @@ export function AuthGate({children}: {children: ReactNode}) {
 
   const resetSession = useCallback(() => {
     generation.current++;
-    setUser(null); setAccountOpen(false); setLegacyPending(false); setLoading(false);
+    setUser(null); setSignup(false); setAccountOpen(false); setLegacyPending(false); setLoading(false);
     setError(''); setNotice('로그인이 필요합니다. 다시 로그인해 주세요.');
   }, []);
 
@@ -114,6 +114,7 @@ export function AuthGate({children}: {children: ReactNode}) {
         if(!claim.ok)throw new Error('가입 또는 로그인은 되었지만 기존 기록 연결을 완료하지 못했습니다. 계정 메뉴에서 다시 시도해 주세요.');
       }
       form.reset();
+      setSignup(false);
       if (session.user) {
         setUser(session.user); setLegacyPending(!!session.legacyClaimPending);
       } else {
