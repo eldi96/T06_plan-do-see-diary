@@ -30,6 +30,7 @@ import { diaryRequest } from "../lib/diary-client";
 import { PlanBrowser } from "../components/plan-browser";
 import { ExecutionCalendar } from "../components/execution-calendar";
 import { CompleteTaskDialog } from "../components/complete-task-dialog";
+import { EstimatedTimeInput } from "../components/estimated-time-input";
 import { AuthGate, AccountMenuTrigger, useDiaryAccount } from "../components/auth-gate";
 import { ExperimentPanel } from "../components/experiment-panel";
 import { ReviewChart } from "../components/monthly-chart";
@@ -1564,20 +1565,7 @@ function DiaryHome() {
                       ))}
                     </select>
                   </Field>
-                  <fieldset className="estimated-time">
-                    <legend>예상 시간</legend>
-                    <div className="estimated-time-options">
-                      {[30, 60].map((minutes) => (
-                        <label key={minutes}>
-                          <input type="radio" name="estimated-time" value={minutes}
-                            checked={Number(draft.estimatedMinutes) === minutes}
-                            onChange={() => edit("estimatedMinutes", minutes)}/>
-                          <span>{minutes === 30 ? "30분" : "1시간"}</span>
-                        </label>
-                      ))}
-                    </div>
-                    {![30, 60].includes(Number(draft.estimatedMinutes)) && <p className="micro">기존 예상 시간 {draft.estimatedMinutes}분은 선택을 바꾸기 전까지 유지됩니다.</p>}
-                  </fieldset>
+                  <EstimatedTimeInput value={draft.estimatedMinutes ?? ""} onChange={minutes=>edit("estimatedMinutes",minutes)}/>
                 </div>
               </>
             )}

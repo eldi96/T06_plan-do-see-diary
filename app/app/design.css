@@ -1297,3 +1297,12 @@ html[data-input-method=keyboard] .estimated-time-options span{transition:none;tr
 .week-strip .week-sunday small,.week-strip .week-sunday span{color:#e2a39a}
 .week-strip .week-saturday small,.week-strip .week-saturday span{color:#9db9dd}
 .week-strip [aria-pressed=true] span{color:#12362a}
+.estimated-unit-options span{min-height:44px;font-size:12px}
+.estimated-number{display:flex;align-items:center;gap:6px;margin-top:8px}
+.estimated-number>button{flex-shrink:0;width:44px;min-height:44px;border:1px solid var(--line);border-radius:10px;background:#1a292b;color:var(--mint);font-size:20px}
+.estimated-number>label{display:flex;align-items:center;gap:6px;min-width:0;flex:1;background:#111c1e;border:1px solid var(--line);border-radius:10px;padding-right:12px}
+.estimated-number input{min-width:0;width:100%;border:0;background:transparent;text-align:center;font-variant-numeric:tabular-nums}
+.estimated-number>label>span{font-size:12px;color:var(--muted);white-space:nowrap}
+@media(hover:hover) and (pointer:fine){.estimated-number>button:not(:disabled):hover{background:#9de2cb12}.estimated-number>button:not(:disabled):active{transform:scale(.97)}}
+html[data-input-method=keyboard] .estimated-number>button:active{transform:none}
+@media(prefers-reduced-motion:reduce){.estimated-number>button:active{transform:none}}
