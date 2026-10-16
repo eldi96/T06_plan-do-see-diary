@@ -23,6 +23,8 @@ async function authRequest(path: string, body?: object): Promise<Session> {
       ? '요청이 많습니다. 잠시 후 다시 시도해 주세요.'
       : response.status === 400 && detail?.code === 'OWNER_SETUP_REQUIRED'
       ? '기존 기록 연결 확인코드가 필요합니다. 아래 확인코드를 입력하거나 입력한 코드를 확인해 주세요.'
+      : response.status === 400 && detail?.code === 'USERNAME_TAKEN'
+      ? '이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.'
       : response.status >= 500
       ? '서버 연결에 문제가 있습니다. 잠시 후 다시 시도해 주세요.'
       : '요청을 완료하지 못했습니다. 입력 내용을 확인하고 다시 시도해 주세요.');

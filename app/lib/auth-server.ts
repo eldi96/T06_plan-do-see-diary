@@ -170,6 +170,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
     stage = 'library-response';
     const result = await response.json() as Record<string, unknown>;
     if (!response.ok) {
+      if (action === 'sign-up' && result.code === 'USERNAME_IS_ALREADY_TAKEN') return authJson({code: 'USERNAME_TAKEN', error: '이미 사용 중인 아이디입니다. 다른 아이디를 입력해 주세요.'}, 400);
       const message = action === 'sign-in' ? LOGIN_ERROR : response.status === 429 ? '요청이 많습니다. 잠시 후 다시 시도해 주세요.' : action === 'sign-up' ? '가입할 수 없습니다. 아이디와 입력 내용을 확인해 주세요.' : '요청을 처리할 수 없습니다. 현재 비밀번호와 로그인 상태를 확인해 주세요.';
       return authJson({ error: message }, response.status);
     }
