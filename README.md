@@ -2,7 +2,7 @@
 
 **계획하고, 실제로 한 일을 기록하고, 돌아본 내용을 다음 계획으로 이어가는 학습 다이어리입니다.**
 
-[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [소스 코드](https://github.com/eldi96/plan-do-see-diary)
+[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [소스 코드](https://github.com/eldi96/T06_plan-do-see-diary)
 
 할 일에 체크하는 것에서 끝나지 않고, 계획과 실제 행동의 차이를 확인하는 데 초점을 맞췄습니다. 계획을 세부 할 일로 나누고, 달력에서 실행을 기록하며, 돌아보기에서 집계의 근거와 다음에 바꿀 점을 확인할 수 있습니다.
 
@@ -115,7 +115,7 @@ app/
 필요 환경: **Node.js 22.13 이상**, npm, Git.
 
 ```sh
-git clone https://github.com/eldi96/plan-do-see-diary.git
+git clone https://github.com/eldi96/T06_plan-do-see-diary.git
 cd plan-do-see-diary/app
 npm ci
 npm run build
