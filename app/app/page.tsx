@@ -1227,7 +1227,7 @@ function DiaryHome() {
               )}
             </section></details></>
           )}
-          {tab === "review" && <><ReviewChart tasks={tasks} completions={completions} plans={plans} onTask={task=>open("task",task)}/><ExperimentPanel/></>}
+          {tab === "review" && <><ReviewChart tasks={tasks} plans={plans} onTask={task=>open("task",task)}/><ExperimentPanel/></>}
           {tab === "review" && plan && (
             <>
               <section className="panel">

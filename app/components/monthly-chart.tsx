@@ -1,7 +1,7 @@
 "use client";
 import {useMemo,useState} from 'react';
 import {PlannedProgressBands} from './planned-progress-bands';
-import type {Task,Plan,CompletionEntry} from '../domain/model';
+import type {Task,Plan} from '../domain/model';
 import {monthlyProgress} from '../domain/monthly-progress';
 import {seoulToday} from '../domain/dates';
 import {ComposedChart} from './charts/composed-chart';
@@ -20,14 +20,14 @@ function DateTargets({onSelect}:{onSelect:(date:string)=>void}) {
     return <rect key={String(point.date)} x={left} y={0} width={Math.max(0,right-left)} height={innerHeight} fill="transparent" style={{cursor:'pointer'}} onClick={()=>onSelect(String(point.date))}/>;
   })}</g>;
 }
-export function ReviewChart({tasks,completions,plans,onTask}:{tasks:Task[];completions:CompletionEntry[];plans:Plan[];onTask:(task:Task)=>void}) {
+export function ReviewChart({tasks,plans,onTask}:{tasks:Task[];plans:Plan[];onTask:(task:Task)=>void}) {
   const [month,setMonth]=useState(()=>seoulToday().slice(0,7));
   const [planId,setPlanId]=useState('');
   const [selectedDate,setSelectedDate]=useState('');
   const livePlans=plans.filter(p=>!p.deleted);
   const validPlan=livePlans.some(p=>p.id===planId)?planId:'';
   const filtered=useMemo(()=>tasks.filter(t=>plans.some(p=>!p.deleted&&p.id===t.planId)&&(!validPlan||t.planId===validPlan)),[tasks,plans,validPlan]);
-  const data=useMemo(()=>monthlyProgress(filtered,completions,month),[filtered,completions,month]);
+  const data=useMemo(()=>monthlyProgress(filtered,month),[filtered,month]);
   const recordedDates=data.filter(day=>day.planned>0||day.actual>0);
   const selected=recordedDates.find(day=>day.date===selectedDate);
   const today=seoulToday();
@@ -52,11 +52,8 @@ export function ReviewChart({tasks,completions,plans,onTask}:{tasks:Task[];compl
       {livePlans.filter(p=>[...selected.plannedTasks,...selected.completedTasks].some(t=>t.planId===p.id)).map(p=>{
         const scheduled=selected.plannedTasks.filter(t=>t.planId===p.id);
         const done=selected.completedTasks.filter(t=>t.planId===p.id);
-        const doneIds=new Set(done.map(t=>t.id));
-        return <details key={p.id} className="routine-occurrences"><summary>{p.title} · 예정 {scheduled.length} / 완료 {done.length}</summary>{scheduled.map(t=><button key={t.id} onClick={()=>onTask(t)}>{t.title}<span>{doneIds.has(t.id)?'당일 완료':selected.date>today?'예정':t.completed?'다른 날 완료':'미완료'}</span></button>)}{done.filter(t=>!scheduled.some(s=>s.id===t.id)).map(t=><button key={t.id} onClick={()=>onTask(t)}>{t.title}<span>다른 날짜의 일 완료 · 예정 {t.dueDate}</span></button>)}</details>;
+        return <details key={p.id} className="routine-occurrences"><summary>{p.title} · 예정 {scheduled.length} / 완료 {done.length}</summary>{scheduled.map(t=><button key={t.id} onClick={()=>onTask(t)}>{t.title}<span>{t.completed?'완료':selected.date>today?'예정':'미완료'}</span></button>)}</details>;
       })}
-      {selected.additional.length>0&&<p className="micro">완료 {selected.actual}개 중 다른 날짜에 예정했던 일 {selected.additional.length}개가 포함돼 있습니다.</p>}
-      {!selected.planned&&!selected.actual&&!selected.additional.length&&<p>이 날짜의 예정·완료 항목이 없습니다.</p>}
     </div>}
   </section>;
 }
