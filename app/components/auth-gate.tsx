@@ -7,6 +7,16 @@ type User = {id: string; username: string};
 type Session = {user?: User; legacyClaimPending?: boolean};
 const AccountTriggerContext = createContext<ReactNode>(null);
 const DiaryAccountContext = createContext<User|null>(null);
+const TAB_LOGIN_KEY = 'pds-tab-login';
+// A reload retains this marker; opening the site in a fresh tab does not.
+let tabSessionPreparation: Promise<void> | undefined;
+function prepareTabSession() {
+  return tabSessionPreparation ??= (async () => {
+    if (sessionStorage.getItem(TAB_LOGIN_KEY) !== 'active') {
+      await authRequest('sign-out', {});
+    }
+  })().catch(error => { tabSessionPreparation = undefined; throw error; });
+}
 export function useDiaryAccount(){return useContext(DiaryAccountContext);}
 
 export function AccountMenuTrigger() {
@@ -65,6 +75,7 @@ export function AuthGate({children}: {children: ReactNode}) {
   const dialog = useRef<HTMLDialogElement>(null);
 
   const resetSession = useCallback(() => {
+    sessionStorage.removeItem(TAB_LOGIN_KEY);
     generation.current++;
     setUser(null); setSignup(false); setAccountOpen(false); setLegacyPending(false); setLoading(false);
     setError(''); setNotice('로그인이 필요합니다. 다시 로그인해 주세요.');
@@ -74,6 +85,7 @@ export function AuthGate({children}: {children: ReactNode}) {
     const current = ++generation.current;
     setLoading(true); setSessionError(false);
     try {
+      await prepareTabSession();
       const session = await authRequest('session');
       if (current !== generation.current) return;
       setUser(session.user || null); setLegacyPending(!!session.legacyClaimPending);
@@ -118,6 +130,7 @@ export function AuthGate({children}: {children: ReactNode}) {
         throw new Error('eldi96은 기존 기록을 보호하는 아이디입니다. 기존 기록 연결 확인코드를 입력해 주세요.');
       }
       const session = await authRequest(signup ? 'sign-up' : 'sign-in', {username, password, ...(signup&&ownerSetupKey?{ownerSetupKey}:{})});
+      sessionStorage.setItem(TAB_LOGIN_KEY, 'active');
       if(ownerSetupKey){
         const claim=await fetch('/api/owner-claim',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({setupKey:ownerSetupKey})});
         if(!claim.ok)throw new Error('가입 또는 로그인은 되었지만 기존 기록 연결을 완료하지 못했습니다. 계정 메뉴에서 다시 시도해 주세요.');

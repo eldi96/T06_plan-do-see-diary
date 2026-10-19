@@ -153,7 +153,7 @@ export async function handleAuthRequest(request: Request): Promise<Response> {
       if (!await limitAccount(request, id)) return authJson({ error: '요청이 많습니다. 잠시 후 다시 시도해 주세요.' }, 429, { 'Retry-After': '60' });
       if (action === 'sign-up' && !ownerSetupAllowed(id, body.ownerSetupKey)) return authJson({ code: 'OWNER_SETUP_REQUIRED', error: '기존 기록을 보호하는 아이디입니다. 기존 기록 연결 확인코드를 입력하거나 확인해 주세요.' }, 400);
       target = action === 'sign-up' ? 'sign-up/email' : 'sign-in/username';
-      payload = action === 'sign-up' ? { username: id, name: id, email: `${crypto.randomUUID()}@accounts.invalid`, password: body.password } : { username: id, password: body.password };
+      payload = action === 'sign-up' ? { username: id, name: id, email: `${crypto.randomUUID()}@accounts.invalid`, password: body.password, rememberMe: false } : { username: id, password: body.password, rememberMe: false };
     }
     if (action === 'change-password') {
       if (typeof body.currentPassword !== 'string' || typeof body.newPassword !== 'string' || body.currentPassword.length > 128 || body.newPassword.length < 4 || body.newPassword.length > 128) return authJson({ error: '비밀번호는 4~128자로 입력해 주세요.' }, 400);
