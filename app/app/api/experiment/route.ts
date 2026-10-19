@@ -1,7 +1,7 @@
 import {env} from 'cloudflare:workers';
 import {assertSameOrigin, authJson, requireSession} from '../../../lib/auth-server';
 
-const CALCULATION = '서울 날짜 기준 당일 마감·미삭제 할 일 중 현재 완료한 수 ÷ 전체 수 × 100. 같은 소유자의 미삭제 계획에 연결된 할 일만 포함. 하루 한 번 서버 시각으로 고정. 누락 날짜는 null이며 0으로 채우지 않음. 할 일 0개인 날은 null로 비교 제외. 중복 날짜 기록 거절. 각 일자의 원래 분수로 평균을 계산한 뒤 소수 둘째 자리 반올림. 주 시작 월요일. 지표·단위·계산 방식은 실험 시작 후 변경 불가.';
+const CALCULATION = '서울 날짜 기준 당일 마감·미삭제 할 일 중 현재 완료한 수 ÷ 전체 수 × 100. 같은 소유자의 미삭제 계획에 연결된 할 일만 포함. 하루 한 번 서버 시각으로 고정. 누락 날짜는 null이며 0으로 채우지 않음. 할 일 0개인 날은 null로 비교 제외. 중복 날짜 기록 거절. 유난히 높거나 낮은 값도 실제 결과이면 삭제하거나 보정하지 않음. 완료 수는 계획 수 이하여서 완료율은 0~100% 범위. 각 일자의 원래 분수로 평균을 계산한 뒤 소수 둘째 자리 반올림. 주 시작 일요일. 지표·단위·계산 방식은 실험 시작 후 변경 불가.';
 type Config = {question:string;metric:string;unit:string;initial_rule:string;calculation_rule:string;created_at:string};
 type Day = {day:string;planned:number;completed:number;task_snapshot:string;recorded_at:string};
 type Change = {before_rule:string;after_rule:string;reason:string;changed_at:string};
@@ -9,17 +9,26 @@ const today = () => new Date(Date.now()+9*3600000).toISOString().slice(0,10);
 const rounded = (value:number) => Math.round((value+Number.EPSILON)*100)/100;
 function db(){if(!env.DB)throw new Error('DB unavailable');return env.DB;}
 async function state(owner:string) {
-  const [config,days,change] = await Promise.all([
+  const currentDay=today();
+  const [config,days,change,preview] = await Promise.all([
     db().prepare('SELECT question,metric,unit,initial_rule,calculation_rule,created_at FROM experiment_config WHERE owner_id=?').bind(owner).first<Config>(),
     db().prepare('SELECT day,planned,completed,task_snapshot,recorded_at FROM experiment_days WHERE owner_id=? ORDER BY day').bind(owner).all<Day>(),
     db().prepare('SELECT before_rule,after_rule,reason,changed_at FROM experiment_change WHERE owner_id=?').bind(owner).first<Change>(),
+    db().prepare(`SELECT COUNT(*) planned,COALESCE(SUM(CASE WHEN json_extract(t.data,'$.completed')=1 THEN 1 ELSE 0 END),0) completed
+      FROM records t WHERE t.owner_id=? AND t.kind='task' AND t.deleted=0 AND json_extract(t.data,'$.dueDate')=?
+      AND EXISTS(SELECT 1 FROM records p WHERE p.owner_id=t.owner_id AND p.id=json_extract(t.data,'$.planId') AND p.kind='plan' AND p.deleted=0)`)
+      .bind(owner,currentDay).first<{planned:number;completed:number}>(),
   ]);
   const records = days.results.map(day=>({...day, task_snapshot:JSON.parse(day.task_snapshot) as {id:string;completed:boolean}[], rate:day.planned?rounded(day.completed/day.planned*100):null, fraction:day.planned?`${day.completed}/${day.planned} × 100`:null}));
   const mean = (slice:Day[]) => {
     const valid = slice.filter(day=>day.planned>0);
     return valid.length?rounded(valid.reduce((total,day)=>total+day.completed/day.planned*100,0)/valid.length):null;
   };
-  return {config,days:records,change,today:today(),comparison:{before:mean(days.results.slice(0,2)),after:mean(days.results.slice(2,5)),unit:'%',beforeDays:days.results.slice(0,2).map(d=>d.day),afterDays:days.results.slice(2,5).map(d=>d.day),complete:records.length===5&&!!change},rules:{missing:null,zeroPlanned:null,weekStartsOn:'월요일',rounding:'소수 둘째 자리',calculation:CALCULATION}};
+  const calculation=config?.calculation_rule??CALCULATION;
+  return {config,days:records,change:change?{...change,basisDays:records.slice(0,2).map(d=>({day:d.day,recordedAt:d.recorded_at}))}:null,today:currentDay,
+    preview:{planned:preview?.planned??0,completed:preview?.completed??0},
+    summary:{planned:records.reduce((n,d)=>n+d.planned,0),completed:records.reduce((n,d)=>n+d.completed,0),mean:mean(days.results),validDays:records.filter(d=>d.planned>0).length},
+    comparison:{before:mean(days.results.slice(0,2)),after:mean(days.results.slice(2,5)),unit:'%',beforeDays:days.results.slice(0,2).map(d=>d.day),afterDays:days.results.slice(2,5).map(d=>d.day),complete:records.length===5&&!!change},rules:{missing:null,zeroPlanned:null,weekStartsOn:calculation.includes('주 시작 월요일')?'월요일':'일요일',rounding:'소수 둘째 자리',calculation}};
 }
 export async function GET(request:Request) {
   try {
