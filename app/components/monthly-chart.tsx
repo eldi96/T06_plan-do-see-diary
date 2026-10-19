@@ -13,6 +13,7 @@ import {useChartStable} from './charts/chart-context';
 function DateTargets({onSelect}:{onSelect:(date:string)=>void}) {
   const {data,xScale,xAccessor,innerWidth,innerHeight}=useChartStable();
   return <g>{data.map((point,index)=>{
+    if(!Number(point.planned)&&!Number(point.actual))return null;
     const center=xScale(xAccessor(point));
     const left=index ? (center+xScale(xAccessor(data[index-1])))/2 : 0;
     const right=index===data.length-1 ? innerWidth : (center+xScale(xAccessor(data[index+1])))/2;
@@ -27,7 +28,8 @@ export function ReviewChart({tasks,completions,plans,onTask}:{tasks:Task[];compl
   const validPlan=livePlans.some(p=>p.id===planId)?planId:'';
   const filtered=useMemo(()=>tasks.filter(t=>plans.some(p=>!p.deleted&&p.id===t.planId)&&(!validPlan||t.planId===validPlan)),[tasks,plans,validPlan]);
   const data=useMemo(()=>monthlyProgress(filtered,completions,month),[filtered,completions,month]);
-  const selected=data.find(day=>day.date===selectedDate);
+  const recordedDates=data.filter(day=>day.planned>0||day.actual>0);
+  const selected=recordedDates.find(day=>day.date===selectedDate);
   const today=seoulToday();
   const totalPlanned=data.reduce((n,d)=>n+d.planned,0);
   const totalDone=data.reduce((n,d)=>n+d.actual,0);
@@ -43,7 +45,7 @@ export function ReviewChart({tasks,completions,plans,onTask}:{tasks:Task[];compl
       <ChartTooltip showCrosshair={false} showDots={false} damping={0} content={({point})=><div className="review-chart-tooltip"><strong>{String(point.date)}</strong><p>해야 할 일 {Number(point.planned)}개</p><p>체크한 일 {Number(point.actual)}개</p><p>완료율 {Number(point.planned)?Math.round(Number(point.actual)/Number(point.planned)*100)+'%':'예정 없음'}</p><small>날짜를 눌러 계획별 기록 확인</small></div>}/>
     </ComposedChart></div>
     {!filtered.length&&<p className="micro">할 일과 반복 루틴을 추가하면 기준 곡선이 나타납니다.</p>}
-    <div className="review-chart-picker"><label htmlFor="chart-date">날짜별 기록</label><select id="chart-date" value={selected?.date??''} onChange={event=>setSelectedDate(event.target.value)}><option value="">그래프를 누르거나 날짜 선택</option>{data.map(day=><option key={day.date} value={day.date}>{day.date} · 예정 {day.planned} / 완료 {day.actual}</option>)}</select></div>
+    <div className="review-chart-picker"><label htmlFor="chart-date">날짜별 기록</label><select id="chart-date" disabled={!recordedDates.length} value={selected?.date??''} onChange={event=>setSelectedDate(event.target.value)}><option value="">{recordedDates.length?'그래프를 누르거나 기록 있는 날짜 선택':'이달에 표시할 기록이 없습니다'}</option>{recordedDates.map(day=><option key={day.date} value={day.date}>{day.date} · 예정 {day.planned} / 완료 {day.actual}</option>)}</select></div>
     <p className="micro">상단 곡선: 예정량의 변화 · 하단 막대: 완료율(0~100%). 두 영역은 높이 기준이 다릅니다.</p>
     <details className="chart-help"><summary>집계 기준</summary><p className="micro">달력에 배치된 할 일의 예정일(마감일)을 기준으로 루틴도 함께 셉니다. 막대는 해당 날짜에 배치된 할 일 중 현재 체크된 수입니다. 체크한 시각과 관계없이 달력에 배치된 날짜에 표시합니다. 완료 취소·재완료를 반영하며, 예정일을 수정하면 그래프도 바뀝니다. 곡선은 상단에서 예정량을 상대적인 높이로 표시하고, 막대는 하단에서 완료율로 표시합니다. 100% 완료해도 두 영역은 닿지 않습니다. 정확한 개수는 날짜별 기록에서 확인합니다.</p></details>
     {selected&&<div className="review-chart-evidence"><h3>{selected.date} · 예정 {selected.planned} / 완료 {selected.actual}</h3>
