@@ -7,7 +7,10 @@ import {seoulToday} from '../domain/dates';
 export function CompleteTaskDialog({task,onClose,onSaved}:{task:Task;onClose:()=>void;onSaved:()=>Promise<void>}){
  const dialog=useRef<HTMLDialogElement>(null);
  const trigger=useRef<HTMLElement|null>(null);
+ const [hours,setHours]=useState('');
  const [minutes,setMinutes]=useState('');
+ const duration=Number(hours)*60+Number(minutes);
+ const chooseDuration=(value:number)=>{setHours(String(Math.floor(value/60)));setMinutes(String(value%60));};
  const [end,setEnd]=useState(()=>new Date(Date.now()+9*3600000).toISOString().slice(0,16));
  const [reason,setReason]=useState('');
  const [busy,setBusy]=useState(false),[error,setError]=useState('');
@@ -18,8 +21,7 @@ export function CompleteTaskDialog({task,onClose,onSaved}:{task:Task;onClose:()=
  const save=async(e:React.FormEvent)=>{e.preventDefault();if(lock.current)return;lock.current=true;setBusy(true);setError('');
   try{
    if(task.dueDate>seoulToday())throw Error('미래 날짜의 할 일은 아직 완료할 수 없습니다.');
-   const duration=Number(minutes);
-   if(!Number.isFinite(duration)||duration<=0||duration>1440)throw Error('실제 시간을 1~1440분 사이로 입력하세요.');
+   if(!Number.isInteger(Number(hours))||!Number.isInteger(Number(minutes))||Number(hours)<0||Number(minutes)<0||Number(minutes)>59||duration<=0||duration>1440)throw Error('실제 시간을 1분~24시간 사이로 입력하세요. 분은 0~59로 입력하세요.');
    const finish=new Date(`${end}:00+09:00`);
    if(!Number.isFinite(finish.getTime()))throw Error('끝낸 시각을 확인하세요.');
    if(finish.getTime()>Date.now()+60000)throw Error('실제로 끝낸 시각을 입력하세요.');
@@ -32,7 +34,7 @@ export function CompleteTaskDialog({task,onClose,onSaved}:{task:Task;onClose:()=
  };
  return <dialog ref={dialog} className="complete-task-dialog" aria-labelledby="complete-task-title" onCancel={e=>{e.preventDefault();close();}}><form onSubmit={save}>
   <h2 id="complete-task-title">완료 기록</h2><p className="completion-task-name">{task.title}</p>
-  <div className="completion-label"><span>실제로 걸린 시간</span><div className="completion-minute-options">{[5,15,30,60].map(m=><button key={m} type="button" className={minutes===String(m)?'primary':'outline'} onClick={()=>setMinutes(String(m))}>{m}분</button>)}</div><div className="completion-custom"><input aria-label="실제로 걸린 시간 직접 입력" type="number" min="1" max="1440" step="1" required value={minutes} onChange={e=>setMinutes(e.target.value)} placeholder="직접 입력"/><span>분</span></div></div>
+  <fieldset className="completion-label completion-duration"><legend>실제로 걸린 시간</legend><div className="completion-minute-options">{[5,15,30,60].map(m=><button key={m} type="button" aria-pressed={duration===m} className={duration===m?'primary':'outline'} onClick={()=>chooseDuration(m)}>{m===60?'1시간':`${m}분`}</button>)}</div><div className="completion-custom"><label><input aria-label="실제로 걸린 시간의 시간" type="number" inputMode="numeric" min="0" max="24" step="1" value={hours} onChange={e=>setHours(e.target.value)} placeholder="0"/><span>시간</span></label><label><input aria-label="실제로 걸린 시간의 분" type="number" inputMode="numeric" min="0" max="59" step="1" value={minutes} onChange={e=>setMinutes(e.target.value)} placeholder="0"/><span>분</span></label></div><span className="micro">시간과 분을 함께 입력할 수 있어요. 최대 24시간</span></fieldset>
   <label className="completion-label">끝낸 시각 (서울)<input type="datetime-local" required value={end} max={`${seoulToday()}T23:59`} onChange={e=>setEnd(e.target.value)}/></label>
   <p className="micro">입력한 시간으로 시작·종료 시각을 계산합니다. 실제 날짜와 시각을 확인해 주세요. 체크를 해제해도 이 기록은 남습니다.</p>
   <details><summary>막힌 이유 남기기 · 선택</summary><textarea aria-label="막힌 이유" value={reason} maxLength={3000} onChange={e=>setReason(e.target.value)}/></details>
