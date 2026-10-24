@@ -2,7 +2,7 @@
 
 **계획하고, 실제로 한 일을 기록하고, 돌아본 내용을 다음 계획으로 이어가는 학습 다이어리입니다.**
 
-[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [소스 코드](https://github.com/eldi96/plan-do-see-diary)
+[실행 사이트](https://pds-study-planner.bronzeamber32.chatgpt.site/) · [소스 코드](https://github.com/eldi96/T06_plan-do-see-diary)
 
 할 일에 체크하는 것에서 끝나지 않고, 계획과 실제 행동의 차이를 확인하는 데 초점을 맞췄습니다. 계획을 세부 할 일로 나누고, 달력에서 실행을 기록하며, 돌아보기에서 집계의 근거와 다음에 바꿀 점을 확인할 수 있습니다.
 
@@ -118,8 +118,8 @@ app/
 필요 환경: **Node.js 22.13 이상**, npm, Git.
 
 ```sh
-git clone https://github.com/eldi96/plan-do-see-diary.git
-cd plan-do-see-diary/app
+git clone --branch codex/t07-auth https://github.com/eldi96/T06_plan-do-see-diary.git
+cd T06_plan-do-see-diary/app
 npm ci
 npm run build
 ```
@@ -151,7 +151,7 @@ DB 파일, 실제 다이어리 내용, 내보낸 JSON, 환경 비밀값, 설치 
 
 ## T07 인증과 실제 5일 관찰
 
-T06 기준 커밋: [7bcdca57e899519720d5e1512a40c8a8e65a7098](https://github.com/eldi96/plan-do-see-diary/commit/7bcdca57e899519720d5e1512a40c8a8e65a7098). T07은 이 커밋을 조상으로 이어갑니다.
+T06 기준 커밋: [7bcdca57e899519720d5e1512a40c8a8e65a7098](https://github.com/eldi96/T06_plan-do-see-diary/commit/7bcdca57e899519720d5e1512a40c8a8e65a7098). T07은 이 커밋을 조상으로 이어갑니다.
 
 - Better Auth 1.7.10과 username 플러그인으로 아이디·비밀번호 가입/로그인을 구성합니다. 이메일 입력과 이메일 복구는 없습니다. 라이브러리 내부 필수 이메일 필드는 전송용이 아닌 임의 식별자입니다.
 - 비밀번호 처리는 Node 표준 scrypt를 호출하며 N32768/r8/p3, 계정별 salt16바이트와 64바이트 키를 사용합니다. 알고리즘을 직접 구현하지 않았습니다.
